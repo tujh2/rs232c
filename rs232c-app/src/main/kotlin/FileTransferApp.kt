@@ -2,7 +2,17 @@ import tornadofx.*
 import views.MainWindowView
 
 class FileTransferApp : App(MainWindowView::class) {
-    var currentDevice = "COM0"
+
+    companion object {
+        lateinit var myApp: FileTransferApp
+    }
+
+    var currentDeviceName: String = ""
+
+    override fun init() {
+        super.init()
+        myApp = this
+    }
 }
 
 fun main(args: Array<String>) {

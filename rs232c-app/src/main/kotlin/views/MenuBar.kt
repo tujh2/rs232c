@@ -1,20 +1,28 @@
 package views
 
-import FileTransferApp
+import FileTransferApp.Companion.myApp
 import javafx.scene.Parent
+import javafx.scene.control.CheckMenuItem
+import javafx.scene.control.Menu
+import jssc.SerialPortList
 import tornadofx.*
 
 class MenuBar : View() {
-    private val devices = arrayListOf("COM0", "COM1", "COM2")
+    private lateinit var menu: Menu
 
     override val root: Parent = menubar {
+
         menu("Settings") {
+
+            item("Refresh").action {
+                updateDevices(menu)
+            }
+
+            separator()
+
             menu("Device") {
-                devices.forEach {
-                    val name =
-                    if (it == (app as FileTransferApp).currentDevice) "(SELECTED) $it" else it
-                    item(name).action {  }
-                }
+                menu = this
+                updateDevices(menu)
             }
 
             menu("Port speed") {
@@ -24,5 +32,30 @@ class MenuBar : View() {
 
         }
 
+    }
+
+    private fun updateDevices(menu: Menu) {
+        val ports = SerialPortList.getPortNames()
+        if (ports.isEmpty()) {
+            myApp.currentDeviceName = ""
+        } else if (myApp.currentDeviceName.isEmpty()) {
+            myApp.currentDeviceName = ports[0]
+        }
+
+        menu.items.clear()
+        ports.forEach {
+            val item = CheckMenuItem(it)
+            item.isSelected = myApp.currentDeviceName == it
+            println(myApp.currentDeviceName)
+            item.action {
+                if (myApp.currentDeviceName == it) {
+                    myApp.currentDeviceName = ""
+                } else {
+                    myApp.currentDeviceName = it
+                }
+                updateDevices(menu)
+            }
+            menu += item
+        }
     }
 }
