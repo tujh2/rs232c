@@ -68,11 +68,7 @@ class MenuBar : View() {
             item.isSelected = myApp.currentDeviceName == it
             println(myApp.currentDeviceName)
             item.action {
-                if (myApp.currentDeviceName == it) {
-                    myApp.currentDeviceName = ""
-                } else {
-                    myApp.currentDeviceName = it
-                }
+                myApp.currentDeviceName = it
                 updateDevices(menu)
             }
             menu += item
