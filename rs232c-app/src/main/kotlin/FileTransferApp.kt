@@ -1,3 +1,4 @@
+import jssc.SerialPort
 import tornadofx.*
 import views.MainWindowView
 
@@ -8,6 +9,7 @@ class FileTransferApp : App(MainWindowView::class) {
     }
 
     var currentDeviceName: String = ""
+    var currentSpeed: Int = SerialPort.BAUDRATE_110
 
     override fun init() {
         super.init()
