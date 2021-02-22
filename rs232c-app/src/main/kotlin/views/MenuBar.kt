@@ -1,28 +1,90 @@
 package views
 
-import FileTransferApp
+import FileTransferApp.Companion.myApp
 import javafx.scene.Parent
+import javafx.scene.control.CheckMenuItem
+import javafx.scene.control.Menu
+import jssc.SerialPort
+import jssc.SerialPortList
 import tornadofx.*
 
 class MenuBar : View() {
-    private val devices = arrayListOf("COM0", "COM1", "COM2")
+    companion object {
+        private val speeds = arrayListOf(
+            SerialPort.BAUDRATE_110,
+            SerialPort.BAUDRATE_300,
+            SerialPort.BAUDRATE_600,
+            SerialPort.BAUDRATE_1200,
+            SerialPort.BAUDRATE_4800,
+            SerialPort.BAUDRATE_9600,
+            SerialPort.BAUDRATE_14400,
+            SerialPort.BAUDRATE_19200,
+            SerialPort.BAUDRATE_38400,
+            SerialPort.BAUDRATE_57600,
+            SerialPort.BAUDRATE_115200,
+            SerialPort.BAUDRATE_128000,
+            SerialPort.BAUDRATE_256000
+        )
+    }
+
+    private lateinit var devicesMenu: Menu
+    private lateinit var speedsMenu: Menu
 
     override val root: Parent = menubar {
+
         menu("Settings") {
+
+            item("Refresh").action {
+                updateDevices(devicesMenu)
+            }
+
+            separator()
+
             menu("Device") {
-                devices.forEach {
-                    val name =
-                    if (it == (app as FileTransferApp).currentDevice) "(SELECTED) $it" else it
-                    item(name).action {  }
-                }
+                devicesMenu = this
+                updateDevices(devicesMenu)
             }
 
             menu("Port speed") {
-                item("0")
-                item("1")
+                speedsMenu = this
+                updateSpeeds(speedsMenu)
             }
 
         }
 
+    }
+
+    private fun updateDevices(menu: Menu) {
+        val ports = SerialPortList.getPortNames()
+        if (ports.isEmpty()) {
+            myApp.currentDeviceName = ""
+        } else if (myApp.currentDeviceName.isEmpty()) {
+            myApp.currentDeviceName = ports[0]
+        }
+
+        menu.items.clear()
+        ports.forEach {
+            val item = CheckMenuItem(it)
+            item.isSelected = myApp.currentDeviceName == it
+            println(myApp.currentDeviceName)
+            item.action {
+                myApp.currentDeviceName = it
+                updateDevices(menu)
+            }
+            menu += item
+        }
+    }
+
+    private fun updateSpeeds(menu: Menu) {
+        menu.items.clear()
+        speeds.forEach {
+            val item = CheckMenuItem(it.toString())
+            item.isSelected = myApp.currentSpeed == it
+            item.action {
+                myApp.currentSpeed = it
+                updateSpeeds(menu)
+            }
+            menu += item
+        }
     }
 }
