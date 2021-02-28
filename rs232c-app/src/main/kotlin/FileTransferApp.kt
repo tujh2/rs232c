@@ -1,7 +1,7 @@
+import core.Connection
 import javafx.scene.control.Alert
 import javafx.stage.Stage
 import jssc.SerialPort
-import jssc.SerialPortException
 import tornadofx.*
 import views.MainWindowView
 import views.css.Styles
@@ -11,8 +11,6 @@ class FileTransferApp : App(MainWindowView::class, Styles::class) {
     companion object {
         lateinit var myApp: FileTransferApp
     }
-
-    private var currentDevice: SerialPort? = null
 
     var currentDeviceName: String = ""
         set(value) {
@@ -24,6 +22,8 @@ class FileTransferApp : App(MainWindowView::class, Styles::class) {
             field = value
             onCurrentSpeedChanged()
         }
+
+    private var currentDevice = Connection(currentDeviceName, currentSpeed)
 
     override fun init() {
         super.init()
@@ -38,49 +38,30 @@ class FileTransferApp : App(MainWindowView::class, Styles::class) {
         }
     }
 
+    fun ping() {
+        if (!currentDevice.ping()) {
+            alert(Alert.AlertType.ERROR, "Error!", "Check your connection!")
+        }
+    }
+
+    fun disconnect() {
+        currentDevice.closeConnection()
+    }
+
     private fun onCurrentDeviceChanged() {
-        closeCurrentDevice()
-        currentDevice = SerialPort(currentDeviceName)
-        setCurrentParams()
+        currentDevice.closeConnection()
+        currentDevice = Connection(currentDeviceName, currentSpeed)
+        if (!currentDevice.openConnection() && currentDeviceName.isNotEmpty()) {
+            alert(Alert.AlertType.ERROR, "Error!", "Check your connection!")
+        }
     }
 
     private fun onCurrentSpeedChanged() {
-        closeCurrentDevice()
-        setCurrentParams()
-    }
-
-    private fun setCurrentParams() {
-        if (currentDevice == null || currentDeviceName.isEmpty()) {
-            return
+        currentDevice.closeConnection()
+        currentDevice = Connection(currentDeviceName, currentSpeed)
+        if (!currentDevice.openConnection() && currentDeviceName.isNotEmpty()) {
+            alert(Alert.AlertType.ERROR, "Error!", "Check your connection!")
         }
-
-        if (!currentDevice!!.isOpened) {
-            openCurrentDevice()
-        }
-
-        try {
-            currentDevice!!.setParams(currentSpeed, 0, 0, 0)
-        } catch (e: SerialPortException) {
-            alert(Alert.AlertType.ERROR, "Ошибка!", "Ошибка установки параметров устройства - проверьте подключение!")
-        }
-    }
-
-    private fun openCurrentDevice() {
-        if (currentDeviceName.isEmpty())
-            return
-
-        try {
-            currentDevice?.openPort()
-            currentDevice?.writeInt(10)
-        } catch (e: SerialPortException) {
-            alert(Alert.AlertType.ERROR, "Ошибка!", "Ошибка установки связи с устройством - проверьте подключение!")
-        }
-    }
-
-    private fun closeCurrentDevice() {
-        try {
-            currentDevice?.openPort()
-        } catch (e: SerialPortException) {}
     }
 }
 
