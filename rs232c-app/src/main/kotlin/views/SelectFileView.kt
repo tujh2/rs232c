@@ -2,7 +2,7 @@ package views
 
 import FileTransferApp.Companion.myApp
 import javafx.scene.Parent
-import javafx.scene.control.CheckMenuItemtat
+import javafx.scene.control.CheckMenuItem
 import javafx.scene.control.Menu
 import jssc.SerialPort
 import jssc.SerialPortList

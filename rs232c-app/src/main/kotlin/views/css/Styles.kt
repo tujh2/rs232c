@@ -5,7 +5,7 @@ import tornadofx.*
 
 class Styles : Stylesheet() {
 
-    companion object {
+        companion object {
         val base by cssclass()
         val checkMenuItem by cssclass()
 
