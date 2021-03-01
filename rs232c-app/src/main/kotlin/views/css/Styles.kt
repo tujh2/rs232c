@@ -109,5 +109,18 @@ class Styles : Stylesheet() {
             }
         }
 
+        button {
+            backgroundColor += Colors.bg2
+            textFill = Colors.fg
+            backgroundRadius += box(Dimension(2.0, Dimension.LinearUnits.px), Dimension(2.0, Dimension.LinearUnits.px), Dimension(2.0, Dimension.LinearUnits.px), Dimension(2.0, Dimension.LinearUnits.px))
+            and(hover) {
+                backgroundColor += Colors.yellow
+            }
+            and(focused) {
+                borderColor += box(Colors.yellow)
+                borderRadius += box(Dimension(2.0, Dimension.LinearUnits.px), Dimension(2.0, Dimension.LinearUnits.px), Dimension(2.0, Dimension.LinearUnits.px), Dimension(2.0, Dimension.LinearUnits.px))
+            }
+        }
+
     }
 }

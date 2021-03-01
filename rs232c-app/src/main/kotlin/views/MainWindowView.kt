@@ -9,5 +9,6 @@ class MainWindowView : View() {
         addClass(Styles.base)
         add(MenuBar())
         add(SelectFileView())
+        add(ConnectionButtonsView())
     }
 }

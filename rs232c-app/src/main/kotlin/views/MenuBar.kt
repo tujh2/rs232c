@@ -59,8 +59,6 @@ class MenuBar : View() {
         val ports = SerialPortList.getPortNames()
         if (ports.isEmpty()) {
             myApp.currentDeviceName = ""
-        } else if (myApp.currentDeviceName.isEmpty()) {
-            myApp.currentDeviceName = ports[0]
         }
 
         menu.items.clear()
