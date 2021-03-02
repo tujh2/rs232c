@@ -9,9 +9,8 @@ import utils.DataUtils.Companion.writeFrame
 
 class Connection(deviceName: String, private var currentSpeed: Int, var isMaster: Boolean) {
 
-    private val device = SerialPort(deviceName)
+    private var device = SerialPort(deviceName)
     private val listeners = mutableListOf<ConnectionListener>()
-    private val defaultSpeed = SerialPort.BAUDRATE_110
 
     fun openConnection(): Boolean {
         return try {
@@ -47,10 +46,17 @@ class Connection(deviceName: String, private var currentSpeed: Int, var isMaster
         return try {
             val syncFrameResult = device.writeFrame(Frame(Frame.Type.SYNC, syncSpeed = currentSpeed))
             val isValid = device.setParams(currentSpeed, SerialPort.DATABITS_8, SerialPort.STOPBITS_1, SerialPort.PARITY_NONE)
+            listeners.forEach { it.onCurrentSpeedChanged(currentSpeed) }
             isValid && syncFrameResult
         } catch (e: SerialPortException) {
             false
         }
+    }
+
+    fun changeDevice(deviceName: String): Boolean {
+        closeConnection()
+        device = SerialPort(deviceName)
+        return deviceName.isNotEmpty() && !openConnection()
     }
 
     fun disconnect(): Boolean {
@@ -101,12 +107,13 @@ class Connection(deviceName: String, private var currentSpeed: Int, var isMaster
                                 println(frame.syncSpeed)
                                 if (frame.syncSpeed < 0 || isMaster)
                                     return
-                                listeners.forEach { it.onCurrentSpeedChanged(frame.syncSpeed) }
 
                                 currentSpeed = frame.syncSpeed
                                 val isValid = device.setParams(currentSpeed, SerialPort.DATABITS_8, SerialPort.STOPBITS_1, SerialPort.PARITY_NONE)
-                                if (isValid)
-                                    device.writeFrame(Frame(Frame.Type.SYNC, syncSpeed = frame.syncSpeed))
+                                if (isValid) {
+                                    device.writeFrame(Frame(Frame.Type.SYNC, syncSpeed = currentSpeed))
+                                    listeners.forEach { it.onCurrentSpeedChanged(currentSpeed) }
+                                }
                             }
                             Frame.Type.BINARY_DATA -> {
                             }

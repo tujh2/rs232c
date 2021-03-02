@@ -80,9 +80,9 @@ class MenuBar : View() {
         speeds.forEach {
             val item = CheckMenuItem(it.toString())
             item.addClass(Styles.checkMenuItem)
-            item.isSelected = myApp.currentSpeed == it
+            item.isSelected = myApp.currentMasterSpeed == it
             item.action {
-                myApp.currentSpeed = it
+                myApp.currentMasterSpeed = it
                 updateSpeeds(menu)
             }
             menu += item

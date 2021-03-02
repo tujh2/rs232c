@@ -1,4 +1,5 @@
 import core.Connection
+import core.ConnectionListener
 import javafx.scene.control.Alert
 import javafx.stage.Stage
 import jssc.SerialPort
@@ -17,14 +18,14 @@ class FileTransferApp : App(MainWindowView::class, Styles::class) {
             field = value
             onCurrentDeviceChanged()
         }
-    var currentSpeed: Int = SerialPort.BAUDRATE_110
+    var currentMasterSpeed: Int = SerialPort.BAUDRATE_110
         set(value) {
             field = value
-            println("CURRENT SPEED HAS CHANGED TO $currentSpeed")
-            currentDevice.changeMasterSpeed(currentSpeed)
+            println("CURRENT SPEED HAS CHANGED TO $currentMasterSpeed")
+            currentDevice.changeMasterSpeed(currentMasterSpeed)
         }
 
-    private var currentDevice = Connection(currentDeviceName, currentSpeed, false)
+    private val currentDevice = Connection(currentDeviceName, currentMasterSpeed, false)
     var isMaster: Boolean = false
         get() = currentDevice.isMaster
         set(value) {
@@ -52,15 +53,17 @@ class FileTransferApp : App(MainWindowView::class, Styles::class) {
     }
 
     fun disconnect() {
-        currentDevice.closeConnection()
+        currentDevice.disconnect()
     }
 
     fun onCurrentDeviceChanged() {
-        currentDevice.closeConnection()
-        currentDevice = Connection(currentDeviceName, currentSpeed, isMaster)
-        if (!currentDevice.openConnection() && currentDeviceName.isNotEmpty()) {
+        if (currentDevice.changeDevice(currentDeviceName)) {
             alert(Alert.AlertType.ERROR, "Error!", "Check your connection!")
         }
+    }
+
+    fun subscribeOnDevice(listener: ConnectionListener) {
+        currentDevice.addListener(listener)
     }
 }
 
