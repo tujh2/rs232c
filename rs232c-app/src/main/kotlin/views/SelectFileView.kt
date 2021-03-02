@@ -1,6 +1,7 @@
 package views
 
 import FileTransferApp.Companion.myApp
+import javafx.geometry.Pos
 import javafx.scene.Parent
 import javafx.scene.control.CheckMenuItem
 import javafx.scene.control.Menu
@@ -15,7 +16,7 @@ import javafx.stage.FileChooser
 
 class SelectFileView :View(){
 
-    override val root = vbox(){
+    override val root = vbox(alignment = Pos.TOP_CENTER){
         button("Select file to transfer"){
             action {
                 val filter = arrayOf(FileChooser.ExtensionFilter(
@@ -23,7 +24,7 @@ class SelectFileView :View(){
                 )
                 val file=chooseFile("Select file to transfer",filter)
                 if(!file.isEmpty())
-                    println(file)
+                    println(file[0].name)
                 else println("EMPTY")
             }
 
