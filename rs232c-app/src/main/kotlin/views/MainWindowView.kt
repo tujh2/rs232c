@@ -10,6 +10,5 @@ class MainWindowView : View() {
         add(MenuBar())
         add(ConnectionDetailsView())
         add(SelectFileView())
-        add(ConnectionButtonsView())
     }
 }
