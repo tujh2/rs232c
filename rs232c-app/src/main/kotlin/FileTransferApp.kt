@@ -1,4 +1,5 @@
 import core.Connection
+import core.ConnectionListener
 import javafx.scene.control.Alert
 import javafx.stage.Stage
 import jssc.SerialPort
@@ -20,8 +21,10 @@ class FileTransferApp : App(MainWindowView::class, Styles::class) {
     var currentSpeed: Int = SerialPort.BAUDRATE_110
         set(value) {
             field = value
-            onCurrentSpeedChanged()
+            onCurrentSpeedChanged(value)
         }
+
+    var isMaster: Boolean = false
 
     private var currentDevice = Connection(currentDeviceName, currentSpeed)
 
@@ -38,8 +41,8 @@ class FileTransferApp : App(MainWindowView::class, Styles::class) {
         }
     }
 
-    fun ping() {
-        if (!currentDevice.ping()) {
+    fun connect() {
+        if (!currentDevice.connect()) {
             alert(Alert.AlertType.ERROR, "Error!", "Check your connection!")
         }
     }
@@ -48,7 +51,7 @@ class FileTransferApp : App(MainWindowView::class, Styles::class) {
         currentDevice.closeConnection()
     }
 
-    private fun onCurrentDeviceChanged() {
+    fun onCurrentDeviceChanged() {
         currentDevice.closeConnection()
         currentDevice = Connection(currentDeviceName, currentSpeed)
         if (!currentDevice.openConnection() && currentDeviceName.isNotEmpty()) {
@@ -56,12 +59,8 @@ class FileTransferApp : App(MainWindowView::class, Styles::class) {
         }
     }
 
-    private fun onCurrentSpeedChanged() {
-        currentDevice.closeConnection()
-        currentDevice = Connection(currentDeviceName, currentSpeed)
-        if (!currentDevice.openConnection() && currentDeviceName.isNotEmpty()) {
-            alert(Alert.AlertType.ERROR, "Error!", "Check your connection!")
-        }
+    fun onCurrentSpeedChanged(speed: Int) {
+        println("CURRENT SPEED HAS CHANGED TO $currentSpeed")
     }
 }
 

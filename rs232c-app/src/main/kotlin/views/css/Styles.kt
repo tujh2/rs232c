@@ -122,5 +122,9 @@ class Styles : Stylesheet() {
             }
         }
 
+        checkBox {
+            textFill = Colors.fg
+        }
+
     }
 }

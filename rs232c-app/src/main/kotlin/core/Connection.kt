@@ -1,21 +1,23 @@
 package core
 
+import FileTransferApp.Companion.myApp
 import jssc.SerialPort
 import jssc.SerialPortEvent
 import jssc.SerialPortEventListener
 import jssc.SerialPortException
-import utils.DataUtils.Companion.readFrame
+import utils.DataUtils.Companion.readFrames
 import utils.DataUtils.Companion.writeFrame
 
 class Connection(deviceName: String, private val connectionSpeed: Int) {
 
     private val device = SerialPort(deviceName)
+    private val listeners = mutableListOf<ConnectionListener>()
 
     fun openConnection(): Boolean {
         return try {
             val isOpened = if (!device.isOpened) device.openPort() else true
 
-            val isValid = device.setParams(connectionSpeed, SerialPort.DATABITS_8, SerialPort.STOPBITS_1, SerialPort.PARITY_EVEN)
+            val isValid = device.setParams(connectionSpeed, SerialPort.DATABITS_8, SerialPort.STOPBITS_1, SerialPort.PARITY_NONE)
 
             device.addEventListener(PortListener())
             device.isOpened && isOpened && isValid
@@ -26,9 +28,18 @@ class Connection(deviceName: String, private val connectionSpeed: Int) {
 
     }
 
-    fun ping(): Boolean {
+    fun connect(): Boolean {
         return try {
             device.writeFrame(Frame(Frame.Type.LINK))
+                    && device.writeFrame(Frame(Frame.Type.SYNC, syncSpeed = myApp.currentSpeed))
+        } catch (e: SerialPortException) {
+            false
+        }
+    }
+
+    fun disconnect(): Boolean {
+        return try {
+            device.writeFrame(Frame(Frame.Type.DOWN_LINK))
         } catch (e: SerialPortException) {
             false
         }
@@ -42,6 +53,14 @@ class Connection(deviceName: String, private val connectionSpeed: Int) {
         }
     }
 
+    fun addListener(listener: ConnectionListener) {
+        listeners.add(listener)
+    }
+
+    fun removeListener(listener: ConnectionListener) {
+        listeners.remove(listener)
+    }
+
     private inner class PortListener: SerialPortEventListener {
         override fun serialEvent(event: SerialPortEvent?) {
             if (event == null) {
@@ -51,18 +70,37 @@ class Connection(deviceName: String, private val connectionSpeed: Int) {
 
             when (event.eventType) {
                 SerialPortEvent.RXCHAR -> {
-                    val frame = device.readFrame()
-                    println("FRAME(${event.portName}): ${frame.type}")
-                    when (frame.type) {
-                        Frame.Type.LINK -> {
-                            device.writeFrame(Frame(Frame.Type.ACK))
+                    device.readFrames().forEach { frame ->
+                        println("FRAME(${event.portName}): ${frame.type}")
+                        when (frame.type) {
+                            Frame.Type.LINK -> {
+                                if (!myApp.isMaster)
+                                    device.writeFrame(Frame(Frame.Type.LINK))
+
+                                listeners.forEach { it.onConnectionUp() }
+                            }
+                            Frame.Type.ACK -> {
+                            }
+                            Frame.Type.SYNC -> {
+                                if (frame.syncSpeed < 0 || myApp.isMaster)
+                                    return
+                                listeners.forEach { it.onCurrentSpeedChanged(frame.syncSpeed) }
+
+                                device.writeFrame(Frame(Frame.Type.SYNC, syncSpeed = frame.syncSpeed))
+                            }
+                            Frame.Type.BINARY_DATA -> {
+                            }
+                            Frame.Type.ERROR -> {
+                            }
+                            Frame.Type.DOWN_LINK -> {
+                                if (!myApp.isMaster)
+                                    device.writeFrame(Frame(Frame.Type.DOWN_LINK))
+
+                                listeners.forEach { it.onConnectionDown() }
+                            }
+                            Frame.Type.UNKNOWN -> {
+                            }
                         }
-                        Frame.Type.ACK -> {}
-                        Frame.Type.SYNC -> {}
-                        Frame.Type.BINARY_DATA -> {}
-                        Frame.Type.ERROR -> {}
-                        Frame.Type.DOWN_LINK -> {}
-                        Frame.Type.UNKNOWN -> {}
                     }
                 }
                 SerialPortEvent.TXEMPTY -> {
