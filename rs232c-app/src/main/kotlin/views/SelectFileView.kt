@@ -15,7 +15,6 @@ import java.io.File
 
 class SelectFileView :View(){
     private lateinit var selectedFileLabel: Label
-    private lateinit var file : File
     override val root = vbox(alignment = Pos.TOP_CENTER){
 
         button("Select file to transfer"){
@@ -23,8 +22,8 @@ class SelectFileView :View(){
                 val filter = arrayOf(FileChooser.ExtensionFilter("Empty filter","*"))
                 val fileList=chooseFile("Select file to transfer",filter,mode=FileChooserMode.Single)
                 if (!fileList.isEmpty()) {
-                    file=fileList[0]
-                    selectedFileLabel.text = "Selected files:${file.name}"
+                    myApp.transferedFile=fileList[0]
+                    selectedFileLabel.text = "Selected files:${myApp.transferedFile.name}"
                 }
                 else selectedFileLabel.text = "Not selected file"
                 }

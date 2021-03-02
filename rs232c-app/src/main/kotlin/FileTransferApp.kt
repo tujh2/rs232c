@@ -6,12 +6,20 @@ import jssc.SerialPort
 import tornadofx.*
 import views.MainWindowView
 import views.css.Styles
+import java.io.File
+import kotlin.reflect.jvm.internal.impl.resolve.constants.NullValue
 
 class FileTransferApp : App(MainWindowView::class, Styles::class) {
 
     companion object {
         lateinit var myApp: FileTransferApp
     }
+
+    var transferedFile:File = File("")
+        set(value){
+            field=value
+            println("CHANGED SELECTED FILE")
+        }
 
     var currentDeviceName: String = ""
         set(value) {
