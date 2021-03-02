@@ -14,7 +14,7 @@ class ConnectionButtonsView: View() {
         checkbox("Master") {
             isSelected = myApp.isMaster
             action {
-                myApp.isMaster = !myApp.isMaster
+                myApp.isMaster = isSelected
                 masterButtons.isVisible = myApp.isMaster
             }
             vboxConstraints {

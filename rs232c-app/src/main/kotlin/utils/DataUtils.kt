@@ -6,15 +6,7 @@ import java.nio.ByteBuffer
 
 class DataUtils {
     companion object {
-        fun ByteArray.toInt(): Int {
-            var result = 0
-            var shift = 0
-            for (byte in this) {
-                result = result shl shift or byte.toInt()
-                shift += 8
-            }
-            return result
-        }
+        fun ByteArray.toInt(): Int  = if (this.isNotEmpty()) ByteBuffer.wrap(this).int else -1
 
         fun Int.toByteArray(): ByteArray {
             return ByteBuffer.allocate(Integer.BYTES)
@@ -27,6 +19,8 @@ class DataUtils {
                 .putShort(this)
                 .array()
         }
+
+        fun ByteArray.toShort(): Short = ByteBuffer.wrap(this).short
 
         fun Int.checkForValidBaudRate(): Int {
             return if (this > SerialPort.BAUDRATE_256000 || this < SerialPort.BAUDRATE_110) -1 else this
@@ -42,12 +36,14 @@ class DataUtils {
 
             if (bytes.size < 3) return emptyList()
 
+            //bytes.forEach { print("$it ") }
+
             var frameStartIndex = 0
-            var frameDataSize: Int
+            var frameDataSize: Short
             var frameEndIndex: Int
 
             do {
-                frameDataSize = (bytes[frameStartIndex + 2].toInt() or (bytes[frameStartIndex + 1].toInt() shl 8)) and 0xFFFF
+                frameDataSize = bytes.copyOfRange(frameStartIndex + 1, frameStartIndex + 3).toShort()
                 frameEndIndex = frameStartIndex + frameDataSize + 3
 
                 if (frameEndIndex > bytes.size)
