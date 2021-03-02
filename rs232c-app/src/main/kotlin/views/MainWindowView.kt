@@ -8,6 +8,7 @@ class MainWindowView : View() {
     override val root = vbox {
         addClass(Styles.base)
         add(MenuBar())
+        add(ConnectionDetailsView())
         add(SelectFileView())
         add(ConnectionButtonsView())
     }

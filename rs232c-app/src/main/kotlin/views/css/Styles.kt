@@ -126,5 +126,9 @@ class Styles : Stylesheet() {
             textFill = Colors.fg
         }
 
+        label {
+            textFill = Colors.fg
+        }
+
     }
 }
