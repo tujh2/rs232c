@@ -12,6 +12,19 @@ class Connection(deviceName: String, private var currentSpeed: Int, var isMaster
     private var device = SerialPort(deviceName)
     private val listeners = mutableListOf<ConnectionListener>()
 
+    var isOpened: Boolean = false
+        private set(value) {
+            field = value
+            if (value) {
+                listeners.forEach { it.onConnectionUp() }
+            } else {
+                listeners.forEach { it.onConnectionDown() }
+            }
+        }
+
+    private var uploadListener: BinaryUploadListener? = null
+    private var downloadListener: BinaryDownloadListener? = null
+
     fun openConnection(): Boolean {
         return try {
             val isOpened = if (!device.isOpened) device.openPort() else true
@@ -67,6 +80,14 @@ class Connection(deviceName: String, private var currentSpeed: Int, var isMaster
         }
     }
 
+    fun writeBinaryData(data: ByteArray): Boolean {
+        return try {
+            device.writeFrame(Frame(Frame.Type.BINARY_DATA, data))
+        } catch (e: SerialPortException) {
+            false
+        }
+    }
+
     fun closeConnection(): Boolean {
         return try {
             device.closePort()
@@ -81,6 +102,14 @@ class Connection(deviceName: String, private var currentSpeed: Int, var isMaster
 
     fun removeListener(listener: ConnectionListener) {
         listeners.remove(listener)
+    }
+
+    fun setDataListener(listener: BinaryUploadListener) {
+        uploadListener = listener
+    }
+
+    fun setDataListener(listener: BinaryDownloadListener) {
+        downloadListener = listener
     }
 
     private inner class PortListener: SerialPortEventListener {
@@ -99,9 +128,10 @@ class Connection(deviceName: String, private var currentSpeed: Int, var isMaster
                                 if (!isMaster)
                                     device.writeFrame(Frame(Frame.Type.LINK))
 
-                                listeners.forEach { it.onConnectionUp() }
+                                isOpened = true
                             }
                             Frame.Type.ACK -> {
+                                uploadListener?.onAckReceived()
                             }
                             Frame.Type.SYNC -> {
                                 println(frame.syncSpeed)
@@ -116,6 +146,8 @@ class Connection(deviceName: String, private var currentSpeed: Int, var isMaster
                                 }
                             }
                             Frame.Type.BINARY_DATA -> {
+                                downloadListener?.onBinaryDataReceived(frame.data)
+                                device.writeFrame(Frame(Frame.Type.ACK))
                             }
                             Frame.Type.ERROR -> {
                             }
@@ -123,7 +155,7 @@ class Connection(deviceName: String, private var currentSpeed: Int, var isMaster
                                 if (!isMaster)
                                     device.writeFrame(Frame(Frame.Type.DOWN_LINK))
 
-                                listeners.forEach { it.onConnectionDown() }
+                                isOpened = false
                             }
                             Frame.Type.UNKNOWN -> {
                             }

@@ -7,7 +7,6 @@ import tornadofx.*
 import views.MainWindowView
 import views.css.Styles
 import java.io.File
-import kotlin.reflect.jvm.internal.impl.resolve.constants.NullValue
 
 class FileTransferApp : App(MainWindowView::class, Styles::class) {
 
@@ -15,11 +14,18 @@ class FileTransferApp : App(MainWindowView::class, Styles::class) {
         lateinit var myApp: FileTransferApp
     }
 
-    var transferedFile:File = File("")
+    private var uploadThread: FileUploadThread? = null
+    private var downloadImpl: FileDownloadImpl = FileDownloadImpl()
+
+    var transferFile: File = File("")
         set(value){
-            field=value
-            println("CHANGED SELECTED FILE")
+            field = value
+            uploadThread = FileUploadThread(value)
+            currentDevice.setDataListener(uploadThread!!)
+            uploadThread?.start() // TODO: перенести в обработчик кнопки "Отправить файл"
         }
+
+    var downloadsFolder: String = "./"
 
     var currentDeviceName: String = ""
         set(value) {
@@ -33,7 +39,7 @@ class FileTransferApp : App(MainWindowView::class, Styles::class) {
             currentDevice.changeMasterSpeed(currentMasterSpeed)
         }
 
-    private val currentDevice = Connection(currentDeviceName, currentMasterSpeed, false)
+    val currentDevice = Connection(currentDeviceName, currentMasterSpeed, false)
     var isMaster: Boolean = false
         get() = currentDevice.isMaster
         set(value) {
@@ -44,6 +50,7 @@ class FileTransferApp : App(MainWindowView::class, Styles::class) {
     override fun init() {
         super.init()
         myApp = this
+        currentDevice.setDataListener(downloadImpl)
     }
 
     override fun start(stage: Stage) {

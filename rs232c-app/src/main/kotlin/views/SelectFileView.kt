@@ -13,10 +13,10 @@ class SelectFileView :View(){
         button("Select file to transfer") {
             action {
                 val filter = arrayOf(FileChooser.ExtensionFilter("Empty filter","*"))
-                val fileList = chooseFile("Select file to transfer",filter,mode=FileChooserMode.Single)
+                val fileList = chooseFile("Select file to transfer",filter,mode = FileChooserMode.Single)
                 if (fileList.isNotEmpty()) {
-                    myApp.transferedFile = fileList[0]
-                    selectedFileLabel.text = "Selected files:${myApp.transferedFile.name}"
+                    myApp.transferFile = fileList[0]
+                    selectedFileLabel.text = "Selected files:${myApp.transferFile.name}"
                 } else {
                     selectedFileLabel.text = "Not selected file"
                 }

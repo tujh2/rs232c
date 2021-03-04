@@ -8,6 +8,14 @@ class DataUtils {
     companion object {
         fun ByteArray.toInt(): Int  = if (this.isNotEmpty()) ByteBuffer.wrap(this).int else -1
 
+        fun ByteArray.toLong(): Long = if(this.isNotEmpty()) ByteBuffer.wrap(this).long else -1
+
+        fun Long.toByteArray(): ByteArray {
+            return ByteBuffer.allocate(Long.SIZE_BYTES)
+                .putLong(this)
+                .array()
+        }
+
         fun Int.toByteArray(): ByteArray {
             return ByteBuffer.allocate(Integer.BYTES)
                 .putInt(this)
