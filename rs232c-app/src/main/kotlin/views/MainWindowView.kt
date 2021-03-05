@@ -1,12 +1,14 @@
 package views
 
-import tornadofx.View
-import tornadofx.vbox
+import tornadofx.*
+import views.css.Styles
 
 class MainWindowView : View() {
-    val menu = find(MenuBar::class)
 
     override val root = vbox {
+        addClass(Styles.base)
         add(MenuBar())
+        add(ConnectionDetailsView())
+        add(TransferSettingView())
     }
 }

@@ -7,6 +7,8 @@ import javafx.scene.control.Menu
 import jssc.SerialPort
 import jssc.SerialPortList
 import tornadofx.*
+import views.css.Styles
+import java.util.regex.Pattern
 
 class MenuBar : View() {
     companion object {
@@ -55,18 +57,16 @@ class MenuBar : View() {
     }
 
     private fun updateDevices(menu: Menu) {
-        val ports = SerialPortList.getPortNames()
+        val ports = SerialPortList.getPortNames(Pattern.compile("(ttyS|ttyUSB|ttyACM|ttyAMA|rfcomm|tnt)[0-9]{1,3}"))
         if (ports.isEmpty()) {
             myApp.currentDeviceName = ""
-        } else if (myApp.currentDeviceName.isEmpty()) {
-            myApp.currentDeviceName = ports[0]
         }
 
         menu.items.clear()
         ports.forEach {
             val item = CheckMenuItem(it)
+            item.addClass(Styles.checkMenuItem)
             item.isSelected = myApp.currentDeviceName == it
-            println(myApp.currentDeviceName)
             item.action {
                 myApp.currentDeviceName = it
                 updateDevices(menu)
@@ -79,9 +79,10 @@ class MenuBar : View() {
         menu.items.clear()
         speeds.forEach {
             val item = CheckMenuItem(it.toString())
-            item.isSelected = myApp.currentSpeed == it
+            item.addClass(Styles.checkMenuItem)
+            item.isSelected = myApp.currentMasterSpeed == it
             item.action {
-                myApp.currentSpeed = it
+                myApp.currentMasterSpeed = it
                 updateSpeeds(menu)
             }
             menu += item
