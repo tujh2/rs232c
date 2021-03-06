@@ -9,6 +9,10 @@ import utils.DataUtils.Companion.writeFrame
 
 class Connection(deviceName: String, private var currentSpeed: Int, var isMaster: Boolean) {
 
+    companion object {
+        private const val DEBUG = false
+    }
+
     private var device = SerialPort(deviceName)
     private val listeners = mutableListOf<ConnectionListener>()
 
@@ -88,6 +92,14 @@ class Connection(deviceName: String, private var currentSpeed: Int, var isMaster
         }
     }
 
+    fun writeAck(): Boolean {
+        return try {
+            device.writeFrame(Frame(Frame.Type.ACK))
+        } catch (e: SerialPortException) {
+            false
+        }
+    }
+
     fun closeConnection(): Boolean {
         return try {
             device.closePort()
@@ -117,12 +129,16 @@ class Connection(deviceName: String, private var currentSpeed: Int, var isMaster
             if (event == null) {
                 return
             }
-            println("EVENT(${event.portName}): ${event.eventType} ${event.eventValue}")
+            if (DEBUG) {
+                println(String.format("EVENT(%s), %d %d", event.portName, event.eventType, event.eventValue))
+            }
 
             when (event.eventType) {
                 SerialPortEvent.RXCHAR -> {
                     device.readFrames().forEach { frame ->
-                        println("FRAME(${event.portName}): ${frame.type}")
+                        if (DEBUG) {
+                            println(String.format("FRAME(%s): %s", event.portName, event.eventType.toString()))
+                        }
                         when (frame.type) {
                             Frame.Type.LINK -> {
                                 if (!isMaster)
@@ -134,7 +150,6 @@ class Connection(deviceName: String, private var currentSpeed: Int, var isMaster
                                 uploadListener?.onAckReceived()
                             }
                             Frame.Type.SYNC -> {
-                                println(frame.syncSpeed)
                                 if (frame.syncSpeed < 0 || isMaster)
                                     return
 
@@ -147,7 +162,6 @@ class Connection(deviceName: String, private var currentSpeed: Int, var isMaster
                             }
                             Frame.Type.BINARY_DATA -> {
                                 downloadListener?.onBinaryDataReceived(frame.data)
-                                device.writeFrame(Frame(Frame.Type.ACK))
                             }
                             Frame.Type.ERROR -> {
                             }

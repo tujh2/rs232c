@@ -14,18 +14,21 @@ class FileTransferApp : App(MainWindowView::class, Styles::class) {
         lateinit var myApp: FileTransferApp
     }
 
-    private var uploadThread: FileUploadThread? = null
+    private var uploadImpl: FileUploadImpl? = null
     private var downloadImpl: FileDownloadImpl = FileDownloadImpl()
 
     var transferFile: File = File("")
         set(value){
             field = value
-            uploadThread = FileUploadThread(value)
-            currentDevice.setDataListener(uploadThread!!)
-            uploadThread?.start() // TODO: перенести в обработчик кнопки "Отправить файл"
+            uploadImpl = FileUploadImpl(value)
+            currentDevice.setDataListener(uploadImpl!!)
         }
 
     var downloadsFolder: String = "./"
+        set(value) {
+            field = value
+            downloadImpl.downloadsFolder = value
+        }
 
     var currentDeviceName: String = ""
         set(value) {
@@ -35,8 +38,7 @@ class FileTransferApp : App(MainWindowView::class, Styles::class) {
     var currentMasterSpeed: Int = SerialPort.BAUDRATE_110
         set(value) {
             field = value
-            println("CURRENT SPEED HAS CHANGED TO $currentMasterSpeed")
-            currentDevice.changeMasterSpeed(currentMasterSpeed)
+            println("SPEED CHANGE: ${currentDevice.changeMasterSpeed(currentMasterSpeed)}")
         }
 
     val currentDevice = Connection(currentDeviceName, currentMasterSpeed, false)
@@ -64,6 +66,12 @@ class FileTransferApp : App(MainWindowView::class, Styles::class) {
     fun connect() {
         if (!currentDevice.connect()) {
             alert(Alert.AlertType.ERROR, "Error!", "Check your connection!")
+        }
+    }
+
+    fun sendSelectedFile() {
+        if (transferFile.name.isNotEmpty()) {
+            uploadImpl?.start()
         }
     }
 
