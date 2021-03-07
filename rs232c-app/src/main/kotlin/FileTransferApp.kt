@@ -30,11 +30,13 @@ class FileTransferApp : App(MainWindowView::class, Styles::class) {
             downloadImpl.downloadsFolder = value
         }
 
+
     var currentDeviceName: String = ""
         set(value) {
             field = value
             onCurrentDeviceChanged()
         }
+
     var currentMasterSpeed: Int = SerialPort.BAUDRATE_110
         set(value) {
             field = value
@@ -88,6 +90,12 @@ class FileTransferApp : App(MainWindowView::class, Styles::class) {
     fun subscribeOnDevice(listener: ConnectionListener) {
         currentDevice.addListener(listener)
     }
+
+    fun subscribeOnProgressListener(listener: ProgressListener) {
+        downloadImpl.addListener(listener)
+    }
+
+
 }
 
 fun main(args: Array<String>) {

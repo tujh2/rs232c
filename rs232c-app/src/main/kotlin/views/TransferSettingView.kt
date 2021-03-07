@@ -1,16 +1,32 @@
 package views
 
 import FileTransferApp.Companion.myApp
+import ProgressListener
 import javafx.geometry.Insets
 import javafx.geometry.Pos
 import javafx.scene.control.Label
+import javafx.scene.control.ProgressBar
 import tornadofx.*
 import javafx.stage.FileChooser
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.javafx.JavaFx
+import kotlinx.coroutines.launch
 import java.io.File
 
-class TransferSettingView :View(){
+class TransferSettingView :View(), ProgressListener {
     private lateinit var selectedFileLabel: Label
     private lateinit var downloadsFolderLabel: Label
+    private lateinit var progressBar:ProgressBar
+
+    init {
+        myApp.subscribeOnProgressListener(this)
+    }
+
+    override fun updateProgress(progress:Double) {
+        if (!myApp.isMaster) progressBar.progress=progress else progressBar.progress = 1.0
+        println("UPDATE $progress")
+    }
 
     override val root = vbox(alignment = Pos.TOP_CENTER) {
 
@@ -51,6 +67,13 @@ class TransferSettingView :View(){
             }
         }
         label(myApp.downloadsFolder) { downloadsFolderLabel = this }
+
+        progressbar(0.0){
+            progressBar = this
+        }
+
+
     }
+
 
 }
