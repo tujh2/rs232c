@@ -24,7 +24,7 @@ class TransferSettingView :View(), ProgressListener {
     }
 
     override fun updateProgress(progress:Double) {
-        if (!myApp.isMaster) progressBar.progress=progress else progressBar.progress = 1.0
+        progressBar.progress=progress
         println("UPDATE $progress")
     }
 
