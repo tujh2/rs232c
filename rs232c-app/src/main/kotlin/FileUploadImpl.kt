@@ -1,5 +1,6 @@
 import FileTransferApp.Companion.myApp
 import core.BinaryUploadListener
+import core.Coder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -32,9 +33,9 @@ class FileUploadImpl(uploadFile: File) : BinaryUploadListener {
                     }
                     if (ackReceived) {
                         ackReceived = false
-                        val bytes = uploadReader?.read(buffer)
+                        val bytes = (uploadReader?.read(buffer))
                         if (bytes != null && bytes > 0) {
-                            myApp.currentDevice.writeBinaryData(buffer.copyOfRange(0, bytes))
+                            myApp.currentDevice.writeBinaryData(Coder.codeByteArray(buffer.copyOfRange(0, bytes)))
                         } else {
                             uploadReader?.close()
                             uploadReader = null

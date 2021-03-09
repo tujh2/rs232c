@@ -1,6 +1,7 @@
 
 import FileTransferApp.Companion.myApp
 import core.BinaryDownloadListener
+import core.Coder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -33,7 +34,12 @@ class FileDownloadImpl: BinaryDownloadListener {
                 fileSize = data.toLong()
                 downloadFile = File(String(data.copyOfRange(Long.SIZE_BYTES, data.size)))
             } else {
-                downloadFile?.appendBytes(data)
+                if (Coder.decodeByteArray(data)?.let { downloadFile?.appendBytes(it) }==null)
+                {
+                    myApp.currentDevice.closeConnection()
+
+
+                }
                 Progress= downloadFile!!.length().toDouble() / fileSize
             }
             if (downloadFile?.length() == fileSize) {
