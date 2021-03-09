@@ -36,7 +36,7 @@ object Coder {
     }
 
     fun error(byteArray: BitSet): BitSet{
-        val outputArray = BitSet(11)
+        var outputArray = BitSet(11)
         outputArray.or(byteArray.get(0,11))
 
         for (i:Int in 0..Random.nextInt(0,15))
@@ -84,7 +84,7 @@ object Coder {
         val  byteArray = BitSet.valueOf(bytes)
         byteArray.set(bytes.size*8)
 
-        var codedArray : BitSet
+        var codedArray = BitSet(15)
         var toIndex = 0
         var fromIndex = 0
         lateinit var codedBytes : BitSet
@@ -122,7 +122,7 @@ object Coder {
         var decodedArray : BitSet? = BitSet(11)
         var toIndex = 0
         var fromIndex = 0
-        val decodedBytes  = BitSet((byteArray.length()-1)/15*11)
+        var decodedBytes  = BitSet((byteArray.length()-1)/15*11)
         decodedBytes.set((byteArray.length()-1)/15*11)
         if (decodedArray != null) {
             println("DECODED LENGHT  "+bytes.size+"  "+(byteArray.length()-1)+"  "+decodedBytes.get(0,decodedBytes.length()).toByteArray().size)
@@ -138,7 +138,6 @@ object Coder {
             }
             else {
                 decodedArray=decode(byteArray.get(fromIndex,byteArray.length()-1))
-                decodedArray= decodedArray?.let { error(it) }
                 if (decodedArray==null)
                     return null
                 for(i in 0..10){
@@ -151,6 +150,5 @@ object Coder {
             fromIndex+=15
         }
         return decodedBytes.get(0,decodedBytes.length()-1).toByteArray()
-
     }
 }
