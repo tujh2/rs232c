@@ -1,4 +1,3 @@
-
 import FileTransferApp.Companion.myApp
 import core.BinaryDownloadListener
 import core.Coder
@@ -8,13 +7,13 @@ import kotlinx.coroutines.launch
 import utils.DataUtils.Companion.toLong
 import java.io.File
 
-class FileDownloadImpl: BinaryDownloadListener {
+class FileDownloadImpl : BinaryDownloadListener {
     private var downloadFile: File? = null
     private var fileSize: Long = -1
     var downloadsFolder = ""
     private val listeners = mutableListOf<ProgressListener>()
 
-    var Progress: Double = 0.0
+    var progress: Double = 0.0
         private set(value) {
             field = value
             listeners.forEach { it.updateProgress(value) }
@@ -30,25 +29,33 @@ class FileDownloadImpl: BinaryDownloadListener {
 
     override fun onBinaryDataReceived(data: ByteArray) {
         GlobalScope.launch(Dispatchers.IO) {
-            if(downloadFile == null || fileSize < 0) {
+            var shouldSendAck = false
+            if (downloadFile == null || fileSize < 0) {
                 fileSize = data.toLong()
                 downloadFile = File(String(data.copyOfRange(Long.SIZE_BYTES, data.size)))
+                shouldSendAck = true
             } else {
-                if (Coder.decodeByteArray(data)?.let { downloadFile?.appendBytes(it) }==null)
-                {
-                    myApp.currentDevice.closeConnection()
+                val decodedBytes = Coder.decodeByteArray(data)
+                if (decodedBytes != null) {
+                    downloadFile?.appendBytes(decodedBytes)
+                    shouldSendAck = true
 
-
+                } else {
+                    println("ERROR: decoded is null")
+                    // TODO: RETRANSMISSION
                 }
-                Progress= downloadFile!!.length().toDouble() / fileSize
             }
-            if (downloadFile?.length() == fileSize) {
+
+            val currentFileSize = downloadFile?.length() ?: 0L
+            progress = (currentFileSize / fileSize).toDouble()
+            if (currentFileSize == fileSize) {
                 println("DOWNLOADED ${downloadFile?.name} with $fileSize")
                 downloadFile = null
                 fileSize = -1
             }
-
-            myApp.currentDevice.writeAck()
+            if (shouldSendAck) {
+                myApp.currentDevice.writeAck()
+            }
         }
     }
 }

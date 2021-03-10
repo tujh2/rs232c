@@ -1,4 +1,3 @@
 interface ProgressListener {
-    fun updateProgress(progress:Double)
-    {}
+    fun updateProgress(progress: Double) {}
 }

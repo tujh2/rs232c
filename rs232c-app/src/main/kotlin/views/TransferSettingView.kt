@@ -8,23 +8,19 @@ import javafx.scene.control.Label
 import javafx.scene.control.ProgressBar
 import tornadofx.*
 import javafx.stage.FileChooser
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.javafx.JavaFx
-import kotlinx.coroutines.launch
 import java.io.File
 
-class TransferSettingView :View(), ProgressListener {
+class TransferSettingView : View(), ProgressListener {
     private lateinit var selectedFileLabel: Label
     private lateinit var downloadsFolderLabel: Label
-    private lateinit var progressBar:ProgressBar
+    private lateinit var progressBar: ProgressBar
 
     init {
         myApp.subscribeOnProgressListener(this)
     }
 
-    override fun updateProgress(progress:Double) {
-        progressBar.progress=progress
+    override fun updateProgress(progress: Double) {
+        progressBar.progress = progress
         println("UPDATE $progress")
     }
 
@@ -68,7 +64,7 @@ class TransferSettingView :View(), ProgressListener {
         }
         label(myApp.downloadsFolder) { downloadsFolderLabel = this }
 
-        progressbar(0.0){
+        progressbar(0.0) {
             progressBar = this
         }
 

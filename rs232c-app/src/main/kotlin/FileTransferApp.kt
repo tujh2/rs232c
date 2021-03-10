@@ -18,7 +18,7 @@ class FileTransferApp : App(MainWindowView::class, Styles::class) {
     private var downloadImpl: FileDownloadImpl = FileDownloadImpl()
 
     var transferFile: File = File("")
-        set(value){
+        set(value) {
             field = value
             uploadImpl = FileUploadImpl(value)
             currentDevice.setDataListener(uploadImpl!!)
@@ -58,7 +58,7 @@ class FileTransferApp : App(MainWindowView::class, Styles::class) {
     }
 
     override fun start(stage: Stage) {
-        with (stage) {
+        with(stage) {
             minHeight = 400.0
             minWidth = 400.0
             super.start(stage)
