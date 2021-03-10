@@ -8,6 +8,10 @@ import javafx.scene.control.Label
 import javafx.scene.control.ProgressBar
 import tornadofx.*
 import javafx.stage.FileChooser
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.javafx.JavaFx
+import kotlinx.coroutines.launch
 import java.io.File
 
 class TransferSettingView : View(), ProgressListener {
@@ -20,8 +24,10 @@ class TransferSettingView : View(), ProgressListener {
     }
 
     override fun updateProgress(progress: Double) {
-        progressBar.progress = progress
-        println("UPDATE $progress")
+        GlobalScope.launch(Dispatchers.JavaFx) {
+            progressBar.progress = progress
+            println("UPDATE $progress")
+        }
     }
 
     override val root = vbox(alignment = Pos.TOP_CENTER) {

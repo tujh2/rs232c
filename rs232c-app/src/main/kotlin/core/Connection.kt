@@ -143,7 +143,7 @@ class Connection(deviceName: String, private var currentSpeed: Int, var isMaster
                 SerialPortEvent.RXCHAR -> {
                     device.readFrames().forEach { frame ->
                         if (DEBUG) {
-                            println(String.format("FRAME(%s): %s", event.portName, event.eventType.toString()))
+                            println(String.format("FRAME(%s): %s %d", event.portName, frame.type, frame.data.size))
                         }
                         when (frame.type) {
                             Frame.Type.LINK -> {
