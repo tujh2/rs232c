@@ -8,6 +8,10 @@ import utils.DataUtils.Companion.toLong
 import java.io.File
 
 class FileDownloadImpl : BinaryDownloadListener {
+    companion object {
+        private const val LOG = false
+    }
+
     private var downloadFile: File? = null
     private var fileSize: Long = -1
     var downloadsFolder = ""
@@ -23,7 +27,7 @@ class FileDownloadImpl : BinaryDownloadListener {
 
     override fun onBinaryDataReceived(data: ByteArray) {
         GlobalScope.launch(Dispatchers.IO) {
-            var shouldSendAck = false
+            val shouldSendAck: Boolean
             if (downloadFile == null || fileSize < 0) {
                 fileSize = data.toLong()
                 val fileName = String(data.copyOfRange(Long.SIZE_BYTES, data.size))
@@ -39,8 +43,11 @@ class FileDownloadImpl : BinaryDownloadListener {
                     downloadFile?.appendBytes(decodedBytes)
                     shouldSendAck = true
                 } else {
-                    println("ERROR: decoded is null")
-                    // TODO: RETRANSMISSION
+                    if (LOG) {
+                        println("ERROR: decoded is null")
+                    }
+                    myApp.currentDevice.writeError()
+                    return@launch
                 }
             }
 
@@ -51,7 +58,9 @@ class FileDownloadImpl : BinaryDownloadListener {
 
             if (currentFileSize == fileSize) {
                 listeners.forEach { it.onEndDownload(currentFile) }
-                println("DOWNLOADED ${downloadFile?.name} with $fileSize")
+                if (LOG) {
+                    println("DOWNLOADED ${downloadFile?.name} with $fileSize")
+                }
                 downloadFile = null
                 fileSize = -1
             }

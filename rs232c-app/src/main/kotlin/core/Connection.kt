@@ -106,6 +106,14 @@ class Connection(deviceName: String, private var currentSpeed: Int, var isMaster
         }
     }
 
+    fun writeError(): Boolean {
+        return try {
+            device.writeFrame(Frame(Frame.Type.ERROR))
+        } catch (e: SerialPortException) {
+            false
+        }
+    }
+
     fun closeConnection(): Boolean {
         return try {
             device.closePort()
@@ -175,6 +183,7 @@ class Connection(deviceName: String, private var currentSpeed: Int, var isMaster
                                 downloadListener?.onBinaryDataReceived(frame.data)
                             }
                             Frame.Type.ERROR -> {
+                                uploadListener?.onErrorReceived()
                             }
                             Frame.Type.DOWN_LINK -> {
                                 if (!isMaster)
