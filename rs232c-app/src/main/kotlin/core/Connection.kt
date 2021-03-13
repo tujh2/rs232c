@@ -10,7 +10,7 @@ import utils.DataUtils.Companion.writeFrame
 class Connection(deviceName: String, private var currentSpeed: Int, var isMaster: Boolean) {
 
     companion object {
-        private const val DEBUG = true
+        private const val DEBUG = false
     }
 
     private var device = SerialPort(deviceName)

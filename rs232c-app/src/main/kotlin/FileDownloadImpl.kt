@@ -13,12 +13,6 @@ class FileDownloadImpl : BinaryDownloadListener {
     var downloadsFolder = ""
     private val listeners = mutableListOf<ProgressListener>()
 
-    var progress: Double = 0.0
-        private set(value) {
-            field = value
-            listeners.forEach { it.updateProgress(value) }
-        }
-
     fun addListener(listener: ProgressListener) {
         listeners.add(listener)
     }
@@ -32,23 +26,31 @@ class FileDownloadImpl : BinaryDownloadListener {
             var shouldSendAck = false
             if (downloadFile == null || fileSize < 0) {
                 fileSize = data.toLong()
-                downloadFile = File(String(data.copyOfRange(Long.SIZE_BYTES, data.size)))
+                val fileName = String(data.copyOfRange(Long.SIZE_BYTES, data.size))
+                val file = File(fileName)
+                if (file.exists()) file.delete()
+                file.createNewFile()
+                downloadFile = file
                 shouldSendAck = true
+                listeners.forEach { it.onStartDownload(file) }
             } else {
                 val decodedBytes = Coder.decodeByteArray(data)
                 if (decodedBytes != null) {
                     downloadFile?.appendBytes(decodedBytes)
                     shouldSendAck = true
-
                 } else {
                     println("ERROR: decoded is null")
                     // TODO: RETRANSMISSION
                 }
             }
 
-            val currentFileSize = downloadFile?.length() ?: 0L
-            progress = (currentFileSize / fileSize).toDouble()
+            val currentFile = downloadFile ?: return@launch
+            val currentFileSize = currentFile.length()
+            val currentProgress = currentFileSize.toDouble() / fileSize
+            listeners.forEach { it.onProgressUpdate(currentProgress) }
+
             if (currentFileSize == fileSize) {
+                listeners.forEach { it.onEndDownload(currentFile) }
                 println("DOWNLOADED ${downloadFile?.name} with $fileSize")
                 downloadFile = null
                 fileSize = -1
