@@ -51,7 +51,7 @@ class FileUploadImpl(uploadFile: File) : BinaryUploadListener {
                             println("ACK RECEIVED")
                         }
                         ackReceived = false
-                        val bytes = (uploadReader?.read(buffer))
+                        val bytes = uploadReader?.read(buffer)
                         if (bytes != null && bytes > 0) {
                             lastUnconfirmedBuffer = Coder.codeByteArray(buffer.copyOfRange(0, bytes))
                             //lastUnconfirmedBuffer = buffer.copyOfRange(0, bytes)
