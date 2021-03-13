@@ -1,4 +1,3 @@
-
 import FileTransferApp.Companion.myApp
 import core.BinaryDownloadListener
 import core.Coder
@@ -8,17 +7,15 @@ import kotlinx.coroutines.launch
 import utils.DataUtils.Companion.toLong
 import java.io.File
 
-class FileDownloadImpl: BinaryDownloadListener {
+class FileDownloadImpl : BinaryDownloadListener {
+    companion object {
+        private const val LOG = false
+    }
+
     private var downloadFile: File? = null
     private var fileSize: Long = -1
     var downloadsFolder = ""
     private val listeners = mutableListOf<ProgressListener>()
-
-    var Progress: Double = 0.0
-        private set(value) {
-            field = value
-            listeners.forEach { it.updateProgress(value) }
-        }
 
     fun addListener(listener: ProgressListener) {
         listeners.add(listener)
@@ -30,25 +27,46 @@ class FileDownloadImpl: BinaryDownloadListener {
 
     override fun onBinaryDataReceived(data: ByteArray) {
         GlobalScope.launch(Dispatchers.IO) {
-            if(downloadFile == null || fileSize < 0) {
+            val shouldSendAck: Boolean
+            if (downloadFile == null || fileSize < 0) {
                 fileSize = data.toLong()
-                downloadFile = File(String(data.copyOfRange(Long.SIZE_BYTES, data.size)))
+                val fileName = String(data.copyOfRange(Long.SIZE_BYTES, data.size))
+                val file = File(fileName)
+                if (file.exists()) file.delete()
+                file.createNewFile()
+                downloadFile = file
+                shouldSendAck = true
+                listeners.forEach { it.onStartDownload(file) }
             } else {
-                if (Coder.decodeByteArray(data)?.let { downloadFile?.appendBytes(it) }==null)
-                {
-                    myApp.currentDevice.closeConnection()
-
-
+                val decodedBytes = Coder.decodeByteArray(data)
+                if (decodedBytes != null) {
+                    downloadFile?.appendBytes(decodedBytes)
+                    shouldSendAck = true
+                } else {
+                    if (LOG) {
+                        println("ERROR: decoded is null")
+                    }
+                    myApp.currentDevice.writeError()
+                    return@launch
                 }
-                Progress= downloadFile!!.length().toDouble() / fileSize
             }
-            if (downloadFile?.length() == fileSize) {
-                println("DOWNLOADED ${downloadFile?.name} with $fileSize")
+
+            val currentFile = downloadFile ?: return@launch
+            val currentFileSize = currentFile.length()
+            val currentProgress = currentFileSize.toDouble() / fileSize
+            listeners.forEach { it.onProgressUpdate(currentProgress) }
+
+            if (currentFileSize == fileSize) {
+                listeners.forEach { it.onEndDownload(currentFile) }
+                if (LOG) {
+                    println("DOWNLOADED ${downloadFile?.name} with $fileSize")
+                }
                 downloadFile = null
                 fileSize = -1
             }
-
-            myApp.currentDevice.writeAck()
+            if (shouldSendAck) {
+                myApp.currentDevice.writeAck()
+            }
         }
     }
 }
