@@ -78,7 +78,7 @@ class TransferSettingView : View(), ProgressListener {
                 useMaxWidth = true
             }
 
-            center = progressbar(0.0) {
+            center = progressbar {
                 progressBar = this
                 useMaxWidth = true
                 isVisible = false
@@ -98,6 +98,7 @@ class TransferSettingView : View(), ProgressListener {
 
     override fun onStartDownload(file: File) {
         GlobalScope.launch(Dispatchers.JavaFx) {
+            progressBar.progress = 0.0
             progressBar.isVisible = true
             downloadingFileLabel.text = file.name
             downloadingFileLabel.isVisible = true

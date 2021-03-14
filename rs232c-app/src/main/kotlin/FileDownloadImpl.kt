@@ -1,21 +1,26 @@
 import FileTransferApp.Companion.myApp
 import core.BinaryDownloadListener
 import core.Coder
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
 import utils.DataUtils.Companion.toLong
 import java.io.File
+import java.util.concurrent.atomic.AtomicBoolean
 
-class FileDownloadImpl : BinaryDownloadListener {
+class FileDownloadThread : Runnable, BinaryDownloadListener {
     companion object {
         private const val LOG = false
     }
 
+    private lateinit var worker: Thread
     private var downloadFile: File? = null
+    private var fileName = ""
     private var fileSize: Long = -1
     var downloadsFolder = ""
     private val listeners = mutableListOf<ProgressListener>()
+    private var isRunning = AtomicBoolean()
+
+    // Вообще у нас будет 1 или 0 ByteArray всегда, ибо имеется четкая последовательность кадров BINARY_DATA -> ACK
+    // Но на всякий случай работаем с массивом, чтобы не терять данные
+    private var receivedData = mutableListOf<ByteArray>()
 
     fun addListener(listener: ProgressListener) {
         listeners.add(listener)
@@ -25,33 +30,39 @@ class FileDownloadImpl : BinaryDownloadListener {
         listeners.remove(listener)
     }
 
-    override fun onBinaryDataReceived(data: ByteArray) {
-        GlobalScope.launch(Dispatchers.IO) {
-            val shouldSendAck: Boolean
-            if (downloadFile == null || fileSize < 0) {
-                fileSize = data.toLong()
-                val fileName = String(data.copyOfRange(Long.SIZE_BYTES, data.size))
+    override fun run() {
+        while (isRunning.get()) {
+            if (fileName.isEmpty() || fileSize < 0) continue
+            if (downloadFile == null) {
                 val file = File(fileName)
                 if (file.exists()) file.delete()
                 file.createNewFile()
                 downloadFile = file
-                shouldSendAck = true
                 listeners.forEach { it.onStartDownload(file) }
-            } else {
-                val decodedBytes = Coder.decodeByteArray(data)
-                if (decodedBytes != null) {
-                    downloadFile?.appendBytes(decodedBytes)
-                    shouldSendAck = true
-                } else {
-                    if (LOG) {
-                        println("ERROR: decoded is null")
-                    }
-                    myApp.currentDevice.writeError()
-                    return@launch
-                }
+                myApp.currentDevice.writeAck()
+                continue
             }
 
-            val currentFile = downloadFile ?: return@launch
+            val data = receivedData.firstOrNull() ?: continue
+            receivedData.removeFirst()
+
+            val decodedBytes = Coder.decodeByteArray(data)
+            if (decodedBytes != null) {
+                downloadFile?.appendBytes(decodedBytes)
+            } else {
+                if (LOG) {
+                    println("ERROR: decoded is null")
+                }
+                myApp.currentDevice.writeError()
+                continue
+            }
+
+
+            val currentFile = downloadFile
+            if (currentFile == null) {
+                isRunning.set(false)
+                return
+            }
             val currentFileSize = currentFile.length()
             val currentProgress = currentFileSize.toDouble() / fileSize
             listeners.forEach { it.onProgressUpdate(currentProgress) }
@@ -63,10 +74,24 @@ class FileDownloadImpl : BinaryDownloadListener {
                 }
                 downloadFile = null
                 fileSize = -1
+                isRunning.set(false)
             }
-            if (shouldSendAck) {
-                myApp.currentDevice.writeAck()
-            }
+            myApp.currentDevice.writeAck()
         }
+    }
+
+    override fun onBinaryDataReceived(data: ByteArray) {
+        receivedData.add(data)
+    }
+
+    override fun onFileHeaderReceived(data: ByteArray) {
+        isRunning.set(false)
+        downloadFile = null
+        fileSize = data.toLong()
+        fileName = String(data.copyOfRange(Long.SIZE_BYTES, data.size))
+
+        isRunning.set(true)
+        worker = Thread(this)
+        worker.start()
     }
 }

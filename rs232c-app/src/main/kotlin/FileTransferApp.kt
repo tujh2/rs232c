@@ -17,8 +17,8 @@ class FileTransferApp : App(MainWindowView::class, Styles::class) {
         lateinit var myApp: FileTransferApp
     }
 
-    private var uploadImpl: FileUploadImpl? = null
-    private var downloadImpl: FileDownloadImpl = FileDownloadImpl()
+    private var uploadThread: FileUploadThread? = null
+    private val downloadImpl: FileDownloadThread = FileDownloadThread()
     private val mainWindow: MainWindowView by inject()
 
     init {
@@ -28,8 +28,8 @@ class FileTransferApp : App(MainWindowView::class, Styles::class) {
     var transferFile: File = File("")
         set(value) {
             field = value
-            uploadImpl = FileUploadImpl(value)
-            currentDevice.setDataListener(uploadImpl!!)
+            uploadThread?.stop()
+            uploadThread = FileUploadThread(transferFile)
         }
 
     var downloadsFolder: String = "./"
@@ -87,8 +87,9 @@ class FileTransferApp : App(MainWindowView::class, Styles::class) {
     }
 
     fun sendSelectedFile() {
-        if (transferFile.name.isNotEmpty()) {
-            uploadImpl?.start()
+        if (transferFile.name.isNotEmpty() && uploadThread != null) {
+            currentDevice.setDataListener(uploadThread!!)
+            uploadThread?.start()
         }
     }
 

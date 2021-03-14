@@ -7,4 +7,5 @@ interface BinaryUploadListener {
 
 interface  BinaryDownloadListener {
     fun onBinaryDataReceived(data: ByteArray)
+    fun onFileHeaderReceived(data: ByteArray)
 }

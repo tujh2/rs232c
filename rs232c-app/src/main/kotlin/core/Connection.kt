@@ -5,7 +5,9 @@ import jssc.SerialPortEvent
 import jssc.SerialPortEventListener
 import jssc.SerialPortException
 import utils.DataUtils.Companion.readFrames
+import utils.DataUtils.Companion.toByteArray
 import utils.DataUtils.Companion.writeFrame
+import java.io.File
 
 class Connection(deviceName: String, private var currentSpeed: Int, var isMaster: Boolean) {
 
@@ -98,6 +100,14 @@ class Connection(deviceName: String, private var currentSpeed: Int, var isMaster
         }
     }
 
+    fun writeFileHeader(file: File): Boolean {
+        return try {
+            device.writeFrame(Frame(Frame.Type.FILE_HEADER, file.length().toByteArray() + file.name.toByteArray()))
+        } catch (e: SerialPortException) {
+            false
+        }
+    }
+
     fun writeAck(): Boolean {
         return try {
             device.writeFrame(Frame(Frame.Type.ACK))
@@ -178,6 +188,9 @@ class Connection(deviceName: String, private var currentSpeed: Int, var isMaster
                                     device.writeFrame(Frame(Frame.Type.SYNC, syncSpeed = currentSpeed))
                                     listeners.forEach { it.onCurrentSpeedChanged(currentSpeed) }
                                 }
+                            }
+                            Frame.Type.FILE_HEADER -> {
+                                downloadListener?.onFileHeaderReceived(frame.data)
                             }
                             Frame.Type.BINARY_DATA -> {
                                 downloadListener?.onBinaryDataReceived(frame.data)
