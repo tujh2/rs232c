@@ -40,6 +40,18 @@ class Styles : Stylesheet() {
     }
 
     init {
+        dialogPane {
+            minHeight = Dimension(200.0, Dimension.LinearUnits.px)
+            minWidth = Dimension(400.0, Dimension.LinearUnits.px)
+            and(header) {
+                backgroundColor += Colors.bg
+            }
+        }
+
+        headerPanel {
+            backgroundColor += Colors.bg1
+        }
+
         base {
             backgroundColor += Colors.bg
         }
