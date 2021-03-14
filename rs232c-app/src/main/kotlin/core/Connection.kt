@@ -5,7 +5,9 @@ import jssc.SerialPortEvent
 import jssc.SerialPortEventListener
 import jssc.SerialPortException
 import utils.DataUtils.Companion.readFrames
+import utils.DataUtils.Companion.toByteArray
 import utils.DataUtils.Companion.writeFrame
+import java.io.File
 
 class Connection(deviceName: String, private var currentSpeed: Int, var isMaster: Boolean) {
 
@@ -34,7 +36,12 @@ class Connection(deviceName: String, private var currentSpeed: Int, var isMaster
             val isOpened = if (!device.isOpened) device.openPort() else true
 
             // Поднимаем изначально соединение на скорости по-умолчанию
-            val isValid = device.setParams(SerialPort.BAUDRATE_110, SerialPort.DATABITS_8, SerialPort.STOPBITS_1, SerialPort.PARITY_NONE)
+            val isValid = device.setParams(
+                SerialPort.BAUDRATE_110,
+                SerialPort.DATABITS_8,
+                SerialPort.STOPBITS_1,
+                SerialPort.PARITY_NONE
+            )
 
             device.addEventListener(PortListener())
             device.isOpened && isOpened && isValid
@@ -62,7 +69,8 @@ class Connection(deviceName: String, private var currentSpeed: Int, var isMaster
         currentSpeed = speed
         return try {
             val syncFrameResult = device.writeFrame(Frame(Frame.Type.SYNC, syncSpeed = currentSpeed))
-            val isValid = device.setParams(currentSpeed, SerialPort.DATABITS_8, SerialPort.STOPBITS_1, SerialPort.PARITY_NONE)
+            val isValid =
+                device.setParams(currentSpeed, SerialPort.DATABITS_8, SerialPort.STOPBITS_1, SerialPort.PARITY_NONE)
             listeners.forEach { it.onCurrentSpeedChanged(currentSpeed) }
             isValid && syncFrameResult
         } catch (e: SerialPortException) {
@@ -92,9 +100,25 @@ class Connection(deviceName: String, private var currentSpeed: Int, var isMaster
         }
     }
 
+    fun writeFileHeader(file: File): Boolean {
+        return try {
+            device.writeFrame(Frame(Frame.Type.FILE_HEADER, file.length().toByteArray() + file.name.toByteArray()))
+        } catch (e: SerialPortException) {
+            false
+        }
+    }
+
     fun writeAck(): Boolean {
         return try {
             device.writeFrame(Frame(Frame.Type.ACK))
+        } catch (e: SerialPortException) {
+            false
+        }
+    }
+
+    fun writeError(): Boolean {
+        return try {
+            device.writeFrame(Frame(Frame.Type.ERROR))
         } catch (e: SerialPortException) {
             false
         }
@@ -124,7 +148,7 @@ class Connection(deviceName: String, private var currentSpeed: Int, var isMaster
         downloadListener = listener
     }
 
-    private inner class PortListener: SerialPortEventListener {
+    private inner class PortListener : SerialPortEventListener {
         override fun serialEvent(event: SerialPortEvent?) {
             if (event == null) {
                 return
@@ -137,7 +161,7 @@ class Connection(deviceName: String, private var currentSpeed: Int, var isMaster
                 SerialPortEvent.RXCHAR -> {
                     device.readFrames().forEach { frame ->
                         if (DEBUG) {
-                            println(String.format("FRAME(%s): %s", event.portName, event.eventType.toString()))
+                            println(String.format("FRAME(%s): %s %d", event.portName, frame.type, frame.data.size))
                         }
                         when (frame.type) {
                             Frame.Type.LINK -> {
@@ -154,16 +178,25 @@ class Connection(deviceName: String, private var currentSpeed: Int, var isMaster
                                     return
 
                                 currentSpeed = frame.syncSpeed
-                                val isValid = device.setParams(currentSpeed, SerialPort.DATABITS_8, SerialPort.STOPBITS_1, SerialPort.PARITY_NONE)
+                                val isValid = device.setParams(
+                                    currentSpeed,
+                                    SerialPort.DATABITS_8,
+                                    SerialPort.STOPBITS_1,
+                                    SerialPort.PARITY_NONE
+                                )
                                 if (isValid) {
                                     device.writeFrame(Frame(Frame.Type.SYNC, syncSpeed = currentSpeed))
                                     listeners.forEach { it.onCurrentSpeedChanged(currentSpeed) }
                                 }
                             }
+                            Frame.Type.FILE_HEADER -> {
+                                downloadListener?.onFileHeaderReceived(frame.data)
+                            }
                             Frame.Type.BINARY_DATA -> {
                                 downloadListener?.onBinaryDataReceived(frame.data)
                             }
                             Frame.Type.ERROR -> {
+                                uploadListener?.onErrorReceived()
                             }
                             Frame.Type.DOWN_LINK -> {
                                 if (!isMaster)

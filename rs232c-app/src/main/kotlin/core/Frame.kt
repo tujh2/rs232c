@@ -34,10 +34,11 @@ class Frame {
         LINK(0),
         ACK(1),
         SYNC(2),
-        BINARY_DATA(3),
-        DOWN_LINK(4),
-        ERROR(5),
-        UNKNOWN(6)
+        FILE_HEADER(3),
+        BINARY_DATA(4),
+        DOWN_LINK(5),
+        ERROR(6),
+        UNKNOWN(7)
     }
 
 }
