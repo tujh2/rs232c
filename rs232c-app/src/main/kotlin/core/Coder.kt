@@ -1,160 +1,169 @@
 package core
 
-import java.util.*
-import kotlin.random.Random
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
+import kotlin.experimental.and
+import kotlin.experimental.or
+import kotlin.experimental.xor
 
 
 object Coder {
-    private fun code(byteArray: BitSet): BitSet {
-        val c1 = byteArray[0] xor byteArray[1] xor byteArray[3] xor
-                byteArray[4] xor byteArray[6] xor
-                byteArray[8] xor byteArray[10]
 
-        val c2 = byteArray[0] xor byteArray[2] xor byteArray[3] xor
-                byteArray[5] xor byteArray[6] xor
-                byteArray[9] xor byteArray[10]
+    private fun code(input: Short): Short {
+        val c1 = (input and 1) xor ((input and 2).toInt() shr 1).toShort() xor
+                ((input and 8).toInt() shr 3).toShort() xor ((input and 16).toInt() shr 4).toShort() xor
+                ((input and 64).toInt() shr 6).toShort() xor ((input and 256).toInt() shr 8).toShort() xor
+                ((input and 1024).toInt() shr 10).toShort()
+        val c2 = (input and 1) xor ((input and 4).toInt() shr 2).toShort() xor
+                ((input and 8).toInt() shr 3).toShort() xor ((input and 32).toInt() shr 5).toShort() xor
+                ((input and 64).toInt() shr 6).toShort() xor ((input and 512).toInt() shr 9).toShort() xor
+                ((input and 1024).toInt() shr 10).toShort()
+        val c3 = ((input and 2).toInt() shr 1).toShort() xor ((input and 4).toInt() shr 2).toShort() xor
+                ((input and 8).toInt() shr 3).toShort() xor ((input and 128).toInt() shr 7).toShort() xor
+                ((input and 256).toInt() shr 8).toShort() xor ((input and 512).toInt() shr 9).toShort() xor
+                ((input and 1024).toInt() shr 10).toShort()
 
-        val c3 = byteArray[1] xor byteArray[2] xor byteArray[3] xor
-                byteArray[7] xor byteArray[8] xor
-                byteArray[9] xor byteArray[10]
+        val c4 = ((input and 16).toInt() shr 4).toShort() xor ((input and 32).toInt() shr 5).toShort() xor
+                ((input and 64).toInt() shr 6).toShort() xor ((input and 128).toInt() shr 7).toShort() xor
+                ((input and 256).toInt() shr 8).toShort() xor ((input and 512).toInt() shr 9).toShort() xor
+                ((input and 1024).toInt() shr 10).toShort()
 
-        val c4 = byteArray[4] xor byteArray[5] xor byteArray[6] xor
-                byteArray[7] xor byteArray[8] xor
-                byteArray[9] xor byteArray[10]
 
-        val outputByteArray = BitSet(15)
-
-        outputByteArray.or(byteArray)
-        outputByteArray.set(11, c1)
-        outputByteArray.set(12, c2)
-        outputByteArray.set(13, c3)
-        outputByteArray.set(14, c4)
-
-        return outputByteArray
-    }
-
-    fun error(byteArray: BitSet): BitSet {
-        val outputArray = BitSet(11)
-        outputArray.or(byteArray.get(0, 11))
-
-        for (i: Int in 0..Random.nextInt(0, 15))
-            outputArray.set(Random.nextInt(0, 15), false)
-
-        return outputArray
+        return ((input.toInt() shl 4) xor ((c4.toInt() shl 3)) xor ((c3.toInt() shl 2)) xor
+                ((c2.toInt() shl 1)) xor ((c1.toInt() shl 0))).toShort()
     }
 
 
-    private fun decode(byteArray: BitSet): BitSet? {
-        val h1 = byteArray[0] xor byteArray[1] xor byteArray[3] xor
-                byteArray[4] xor byteArray[6] xor
-                byteArray[8] xor byteArray[10] xor byteArray[11]
+    private fun decode(input: Short): Short? {
 
-        if (h1) return null
+        val h1 = ((input and 1 * 16).toInt() shr 4).toShort() xor ((input and 2 * 16).toInt() shr 1 + 4).toShort() xor
+                ((input and 8 * 16).toInt() shr 3 + 4).toShort() xor ((input and 16 * 16).toInt() shr 4 + 4).toShort() xor
+                ((input and 64 * 16).toInt() shr 6 + 4).toShort() xor ((input and 256 * 16).toInt() shr 8 + 4).toShort() xor
+                ((input and 1024 * 16).toInt() shr 10 + 4).toShort() xor ((input and 1).toInt() shr 0).toShort()
+        if (h1 != 0.toShort()) return null
 
-        val h2 = byteArray[0] xor byteArray[2] xor byteArray[3] xor
-                byteArray[5] xor byteArray[6] xor
-                byteArray[9] xor byteArray[10] xor byteArray[12]
+        val h2 = ((input and 1 * 16).toInt() shr 4).toShort() xor ((input and 4 * 16).toInt() shr 2 + 4).toShort() xor
+                ((input and 8 * 16).toInt() shr 3 + 4).toShort() xor ((input and 32 * 16).toInt() shr 5 + 4).toShort() xor
+                ((input and 64 * 16).toInt() shr 6 + 4).toShort() xor ((input and 512 * 16).toInt() shr 9 + 4).toShort() xor
+                ((input and 1024 * 16).toInt() shr 10 + 4).toShort() xor ((input and 2).toInt() shr 1).toShort()
+        if (h2 != 0.toShort()) return null
 
-        if (h2) return null
+        val h3 =
+            ((input and 2 * 16).toInt() shr 1 + 4).toShort() xor ((input and 4 * 16).toInt() shr 2 + 4).toShort() xor
+                    ((input and 8 * 16).toInt() shr 3 + 4).toShort() xor ((input and 128 * 16).toInt() shr 7 + 4).toShort() xor
+                    ((input and 256 * 16).toInt() shr 8 + 4).toShort() xor ((input and 512 * 16).toInt() shr 9 + 4).toShort() xor
+                    ((input and 1024 * 16).toInt() shr 10 + 4).toShort() xor ((input and 4).toInt() shr 2).toShort()
 
-        val h3 = byteArray[1] xor byteArray[2] xor byteArray[3] xor
-                byteArray[7] xor byteArray[8] xor
-                byteArray[9] xor byteArray[10] xor byteArray[13]
+        if (h3 != 0.toShort()) return null
 
-        if (h3) return null
+        val h4 =
+            ((input and 16 * 16).toInt() shr 4 + 4).toShort() xor ((input and 32 * 16).toInt() shr 5 + 4).toShort() xor
+                    ((input and 64 * 16).toInt() shr 6 + 4).toShort() xor ((input and 128 * 16).toInt() shr 7 + 4).toShort() xor
+                    ((input and 256 * 16).toInt() shr 8 + 4).toShort() xor ((input and 512 * 16).toInt() shr 9 + 4).toShort() xor
+                    ((input and 1024 * 16).toInt() shr 10 + 4).toShort() xor ((input.toInt() and 8) shr 3).toShort()
+        if (h4 != 0.toShort()) return null
 
-        val h4 = byteArray[4] xor byteArray[5] xor byteArray[6] xor
-                byteArray[7] xor byteArray[8] xor
-                byteArray[9] xor byteArray[10] xor byteArray[14]
 
-        if (h4) return null
+        return ((input xor (input and 1) xor (input and 2) xor (input and 4) xor (input and 8)).toInt() shr 4).toShort()
+    }
 
-        val outputByteArray = BitSet(11)
 
-        outputByteArray.or(byteArray.get(0, 11))
+    private fun codeShortByIndex(index: Int, bytes: ByteArray): Short {
+        var indexToRead = index
+        var byteToRead = index / 8
+        var a: Short = 0
+        var bitsToRead = 11
+        if (byteToRead > bytes.lastIndex)
+            return -1
+        if (indexToRead + 10 > (bytes.size * 8) - 1) {
+            while (indexToRead < bytes.size * 8) {
+                if (indexToRead / 8 > byteToRead) byteToRead += 1
+                a = ((a.toInt() shl 1) or (bytes[byteToRead].toInt() shr (7 - (indexToRead % 8)) and 1)).toShort()
+                indexToRead += 1
+                bitsToRead -= 1
+            }
+        } else {
+            while (bitsToRead > 0) {
+                if (indexToRead / 8 > byteToRead) byteToRead += 1
+                a = ((a.toInt() shl 1) or (bytes[byteToRead].toInt() shr (7 - (indexToRead % 8)) and 1)).toShort()
+                indexToRead += 1
+                bitsToRead -= 1
+            }
+        }
+        a = code(a)
+        a = a xor ((1 shl (15 - bitsToRead)).toShort())
+        return a
+    }
 
-        return outputByteArray
+
+    private fun writeShortByIndex(index: Int, bytes: ByteArray, short: Short, size: Int): ByteArray {
+        var byteToWriteAt = index / 8
+        val a: Short = short
+
+        for (i in index until index + size) {
+            if (i / 8 > byteToWriteAt) {
+                byteToWriteAt += 1
+            }
+            if (size - 1 - (i - index) > 7 - i % 8) {
+                bytes[byteToWriteAt] =
+                    bytes[byteToWriteAt] or
+                            ((a.toInt() and (1 shl (size - 1 - (i - index)))) shr (size - 1 - (i - index) - (7 - i % 8))).toByte()
+            } else {
+                bytes[byteToWriteAt] =
+                    bytes[byteToWriteAt] or
+                            ((a.toInt() and (1 shl (size - 1 - (i - index)))) shl ((7 - i % 8) - (size - 1 - (i - index)))).toByte()
+            }
+        }
+        return bytes
+    }
+
+
+    private fun decodeShortFromBytes(bytes: ByteArray): Pair<Short, Int> {
+        var a: Short = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).short
+        var index = 0
+        for (i in 4..15) {
+            if (((bytes[i / 8].toInt() shr i % 8) and 1) == 1) {
+                index = i
+            }
+        }
+        a = a xor (1 shl index).toShort()
+        index -= 4
+        a = decode(a) ?: return Pair(0, -1)
+        return Pair(a, index)
     }
 
 
     fun codeByteArray(bytes: ByteArray): ByteArray {
-        val byteArray = BitSet.valueOf(bytes)
-        byteArray.set(bytes.size * 8)
-
-        var codedArray: BitSet
         var toIndex = 0
         var fromIndex = 0
-        lateinit var codedBytes: BitSet
-        if (byteArray.length() % 11 == 0) {
-            codedBytes = BitSet(((byteArray.length() - 1) / 11) * 15)
-            codedBytes.set(((byteArray.length() - 1) / 11) * 15)
+        var shortByte: Short
+        val codedBytes: ByteArray = if ((bytes.size * 8) % 11 == 0) {
+            ByteArray((bytes.size * 8 / 11) * 2)
         } else {
-            codedBytes = BitSet((((byteArray.length() - 1) / 11) + 1) * 15)
-            codedBytes.set((((byteArray.length() - 1) / 11) + 1) * 15)
+            ByteArray(((bytes.size * 8 / 11) + 1) * 2)
         }
-
-        println(
-            "CodedBytes Length " + (byteArray.length() - 1) + "  " + (codedBytes.length() - 1) + "  " + codedBytes.get(
-                0,
-                codedBytes.length()
-            ).toByteArray().size
-        )
-
-        while (true) {
-            if (fromIndex < byteArray.length() - 1) {
-                codedArray = code(byteArray.get(fromIndex, fromIndex + 11))
-                for (i in 0..14) {
-                    codedBytes[toIndex + i] = codedArray[i]
-                }
-            } else {
-                break
-            }
+        while (toIndex < codedBytes.size - 1) {
+            shortByte = codeShortByIndex(bytes = bytes, index = fromIndex)
+            codedBytes[toIndex] = (shortByte and 0xff).toByte()
+            codedBytes[toIndex + 1] = ((shortByte.toInt() shr 8).toShort() and 0xff).toByte()
             fromIndex += 11
-            toIndex += 15
+            toIndex += 2
         }
-        return codedBytes.get(0, codedBytes.length() - 1).toByteArray()
+        return codedBytes
     }
 
     fun decodeByteArray(bytes: ByteArray): ByteArray? {
-        val byteArray = BitSet.valueOf(bytes)
-        byteArray.set(bytes.size * 8)
-
-        var decodedArray: BitSet? = BitSet(11)
+        var decodedBytes = ByteArray(bytes.size / 2 * 11 / 8)
         var toIndex = 0
         var fromIndex = 0
-        val decodedBytes = BitSet((byteArray.length() - 1) / 15 * 11)
-        decodedBytes.set((byteArray.length() - 1) / 15 * 11)
-        if (decodedArray != null) {
-            println(
-                "DECODED LENGTH  " + bytes.size + "  " + (byteArray.length() - 1) + "  " + decodedBytes.get(
-                    0,
-                    decodedBytes.length()
-                ).toByteArray().size
-            )
+        while (fromIndex <= bytes.lastIndex - 1) {
+            val bytesToDecode = bytes.slice(fromIndex..fromIndex + 1).toByteArray()
+            val (short, size) = decodeShortFromBytes(bytesToDecode)
+            if (size < 0) return null
+            decodedBytes = writeShortByIndex(toIndex, decodedBytes, short, size)
+            fromIndex += 2
+            toIndex += size
         }
-        while (true) {
-            if (fromIndex + 14 < byteArray.length() - 1) {
-                decodedArray = decode(byteArray.get(fromIndex, fromIndex + 15))
-                if (decodedArray == null)
-                    return null
-                for (i in 0..10) {
-                    decodedBytes[toIndex + i] = decodedArray[i]
-                }
-            } else {
-                decodedArray = decode(byteArray.get(fromIndex, byteArray.length() - 1))
-                decodedArray = decodedArray?.let { error(it) }
-                if (decodedArray == null)
-                    return null
-                for (i in 0..10) {
-                    decodedBytes[toIndex + i] = decodedArray[i]
-                }
-                println("LASTLAST$fromIndex")
-                break
-            }
-            toIndex += 11
-            fromIndex += 15
-        }
-        return decodedBytes.get(0, decodedBytes.length() - 1).toByteArray()
-
+        return decodedBytes
     }
 }
