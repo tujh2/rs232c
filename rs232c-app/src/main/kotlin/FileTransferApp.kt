@@ -33,11 +33,6 @@ class FileTransferApp : App(MainWindowView::class, Styles::class) {
         }
 
     var downloadsFolder: String = "./"
-        set(value) {
-            field = value
-            downloadImpl.downloadsFolder = value
-        }
-
 
     var currentDeviceName: String = ""
         set(value) {
@@ -113,7 +108,6 @@ class FileTransferApp : App(MainWindowView::class, Styles::class) {
     fun subscribeOnProgressListener(listener: ProgressListener) {
         downloadImpl.addListener(listener)
     }
-
 
 }
 

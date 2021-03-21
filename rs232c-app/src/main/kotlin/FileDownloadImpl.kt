@@ -14,9 +14,8 @@ class FileDownloadThread : Runnable, BinaryDownloadListener {
     private var downloadFile: File? = null
     private var fileName = ""
     private var fileSize: Long = -1
-    var downloadsFolder = ""
     private val listeners = mutableListOf<ProgressListener>()
-    private var isRunning = AtomicBoolean()
+    private val isRunning = AtomicBoolean()
 
     // Вообще у нас будет 1 или 0 ByteArray всегда, ибо имеется четкая последовательность кадров BINARY_DATA -> ACK
     // Но на всякий случай работаем с массивом, чтобы не терять данные
@@ -34,7 +33,7 @@ class FileDownloadThread : Runnable, BinaryDownloadListener {
         while (isRunning.get()) {
             if (fileName.isEmpty() || fileSize < 0) continue
             if (downloadFile == null) {
-                val file = File(fileName)
+                val file = File(myApp.downloadsFolder + fileName)
                 if (file.exists()) file.delete()
                 file.createNewFile()
                 downloadFile = file

@@ -40,7 +40,7 @@ class TransferSettingView : View(), ProgressListener {
                     val fileList = chooseFile("Select file to transfer", filter, mode = FileChooserMode.Single)
                     if (fileList.isNotEmpty()) {
                         myApp.transferFile = fileList[0]
-                        selectedFileLabel.text = "Selected files:${myApp.transferFile.name}"
+                        selectedFileLabel.text = "Selected file: ${myApp.transferFile.name}"
                     } else {
                         selectedFileLabel.text = "Not selected file"
                     }
