@@ -40,7 +40,7 @@ class TransferSettingView : View(), ProgressListener {
                     val fileList = chooseFile("Select file to transfer", filter, mode = FileChooserMode.Single)
                     if (fileList.isNotEmpty()) {
                         myApp.transferFile = fileList[0]
-                        selectedFileLabel.text = "Selected files:${myApp.transferFile.name}"
+                        selectedFileLabel.text = "Selected file: ${myApp.transferFile.name}"
                     } else {
                         selectedFileLabel.text = "Not selected file"
                     }
@@ -78,7 +78,7 @@ class TransferSettingView : View(), ProgressListener {
                 useMaxWidth = true
             }
 
-            center = progressbar(0.0) {
+            center = progressbar {
                 progressBar = this
                 useMaxWidth = true
                 isVisible = false
@@ -98,6 +98,7 @@ class TransferSettingView : View(), ProgressListener {
 
     override fun onStartDownload(file: File) {
         GlobalScope.launch(Dispatchers.JavaFx) {
+            progressBar.progress = 0.0
             progressBar.isVisible = true
             downloadingFileLabel.text = file.name
             downloadingFileLabel.isVisible = true

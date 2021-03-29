@@ -54,7 +54,7 @@ class DataUtils {
                 frameDataSize = bytes.copyOfRange(frameStartIndex + 1, frameStartIndex + 3).toShort()
                 frameEndIndex = frameStartIndex + frameDataSize + 3
 
-                if (frameEndIndex > bytes.size)
+                if (frameEndIndex > bytes.size || frameStartIndex < 0 || frameStartIndex > frameEndIndex)
                     return frames
 
                 frames.add(Frame(bytes.copyOfRange(frameStartIndex, frameEndIndex)))
