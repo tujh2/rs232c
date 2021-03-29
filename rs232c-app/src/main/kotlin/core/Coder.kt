@@ -125,10 +125,10 @@ object Coder {
     }
 
 
-    private fun decodeShortFromBytes(bytes: ByteArray , createEr : Boolean): Pair<Short, Int> {
+    private fun decodeShortFromBytes(bytes: ByteArray ): Pair<Short, Int> {
         var a: Short = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).short
         var index = 0
-
+        val createEr = Random.nextInt(0,1000)
         for (i in 4..15) {
             if (((bytes[i / 8].toInt() shr i % 8) and 1) == 1) {
                 index = i
@@ -136,11 +136,11 @@ object Coder {
         }
         a = a xor (1 shl index).toShort()
         index -= 4
-        if (createEr)
+        if (createEr==100)
         {
-            a = createError(a)
-            a = decode(a) ?: return Pair(0, -1)
+             a = createError(a)
         }
+        a = decode(a) ?: return Pair(0, -1)
         return Pair(a, index)
     }
 
@@ -171,8 +171,8 @@ object Coder {
         var fromIndex = 0
         while (fromIndex <= bytes.lastIndex - 1) {
             val bytesToDecode = bytes.slice(fromIndex..fromIndex + 1).toByteArray()
-            val createEr = Random.nextBoolean()
-            val (short, size) = decodeShortFromBytes(bytesToDecode,createEr)
+
+            val (short, size) = decodeShortFromBytes(bytesToDecode)
             if (size < 0) return null
             decodedBytes = writeShortByIndex(toIndex, decodedBytes, short, size)
             fromIndex += 2
