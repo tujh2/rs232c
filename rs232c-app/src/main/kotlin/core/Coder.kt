@@ -5,6 +5,7 @@ import java.nio.ByteOrder
 import kotlin.experimental.and
 import kotlin.experimental.or
 import kotlin.experimental.xor
+import kotlin.random.Random
 
 
 object Coder {
@@ -67,6 +68,12 @@ object Coder {
         return ((input xor (input and 1) xor (input and 2) xor (input and 4) xor (input and 8)).toInt() shr 4).toShort()
     }
 
+    private fun createError(input: Short):Short{
+        val output : Short=input xor ((1 shl Random(12).nextInt(0,15)).toShort())
+        return output
+    }
+
+
 
     private fun codeShortByIndex(index: Int, bytes: ByteArray): Short {
         var indexToRead = index
@@ -118,9 +125,10 @@ object Coder {
     }
 
 
-    private fun decodeShortFromBytes(bytes: ByteArray): Pair<Short, Int> {
+    private fun decodeShortFromBytes(bytes: ByteArray , createEr : Boolean): Pair<Short, Int> {
         var a: Short = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).short
         var index = 0
+
         for (i in 4..15) {
             if (((bytes[i / 8].toInt() shr i % 8) and 1) == 1) {
                 index = i
@@ -128,7 +136,11 @@ object Coder {
         }
         a = a xor (1 shl index).toShort()
         index -= 4
-        a = decode(a) ?: return Pair(0, -1)
+        if (createEr)
+        {
+            a = createError(a)
+            a = decode(a) ?: return Pair(0, -1)
+        }
         return Pair(a, index)
     }
 
@@ -153,12 +165,14 @@ object Coder {
     }
 
     fun decodeByteArray(bytes: ByteArray): ByteArray? {
+
         var decodedBytes = ByteArray(bytes.size / 2 * 11 / 8)
         var toIndex = 0
         var fromIndex = 0
         while (fromIndex <= bytes.lastIndex - 1) {
             val bytesToDecode = bytes.slice(fromIndex..fromIndex + 1).toByteArray()
-            val (short, size) = decodeShortFromBytes(bytesToDecode)
+            val createEr = Random.nextBoolean()
+            val (short, size) = decodeShortFromBytes(bytesToDecode,createEr)
             if (size < 0) return null
             decodedBytes = writeShortByIndex(toIndex, decodedBytes, short, size)
             fromIndex += 2
