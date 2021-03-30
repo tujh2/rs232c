@@ -1,21 +1,19 @@
 import FileTransferApp.Companion.myApp
 import core.BinaryUploadListener
 import core.Coder
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
-import utils.DataUtils.Companion.toByteArray
 import java.io.BufferedInputStream
 import java.io.File
 import java.util.concurrent.atomic.AtomicBoolean
 
-class FileUploadThread(private val uploadFile: File) : Runnable, BinaryUploadListener {
+class FileUploadThread(var uploadFile: File = File("")) : Runnable, BinaryUploadListener {
     companion object {
         private const val LOG = false
     }
 
     private var isRunning = AtomicBoolean()
+    private val listeners = mutableListOf<ProgressListener>()
     private lateinit var worker: Thread
+    private var uploadedSize: Long = 0
 
     private var uploadReader: BufferedInputStream? = null
     @Volatile
@@ -26,18 +24,29 @@ class FileUploadThread(private val uploadFile: File) : Runnable, BinaryUploadLis
     private val buffer: ByteArray = ByteArray(1024)
     private lateinit var lastUnconfirmedBuffer: ByteArray
 
+    fun addListener(listener: ProgressListener) {
+        listeners.add(listener)
+    }
+
+    fun removeListener(listener: ProgressListener) {
+        listeners.remove(listener)
+    }
+
     fun start() {
         this.uploadReader = uploadFile.inputStream().buffered()
         isRunning.set(false)
 
         worker = Thread(this)
         shouldSendFileHeader = true
+        uploadedSize = 0
         isRunning.set(true)
         worker.start()
+        listeners.forEach { it.onSessionStart(uploadFile) }
     }
 
     fun stop() {
         isRunning.set(false)
+        listeners.forEach { it.onSessionEnd(uploadFile) }
     }
 
     override fun run() {
@@ -54,6 +63,7 @@ class FileUploadThread(private val uploadFile: File) : Runnable, BinaryUploadLis
                         println("ERROR RECEIVED")
                     }
                     errorReceived = false
+                    listeners.forEach { it.onError() }
                     myApp.currentDevice.writeBinaryData(lastUnconfirmedBuffer)
                     continue
                 }
@@ -62,12 +72,15 @@ class FileUploadThread(private val uploadFile: File) : Runnable, BinaryUploadLis
                         println("ACK RECEIVED(thread)")
                     }
                     ackReceived = false
+                    listeners.forEach { it.onProgressUpdate(uploadedSize.toDouble() / uploadFile.length()) }
                     val bytes = uploadReader?.read(buffer)
                     if (bytes != null && bytes > 0) {
+                        uploadedSize += bytes
                         lastUnconfirmedBuffer = Coder.codeByteArray(buffer.copyOfRange(0, bytes))
                         //lastUnconfirmedBuffer = buffer.copyOfRange(0, bytes)
                         myApp.currentDevice.writeBinaryData(lastUnconfirmedBuffer)
                     } else {
+                        listeners.forEach { it.onSessionEnd(uploadFile) }
                         uploadReader?.close()
                         uploadReader = null
                         isRunning.set(false)

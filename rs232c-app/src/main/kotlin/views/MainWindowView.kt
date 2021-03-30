@@ -10,5 +10,7 @@ class MainWindowView : View() {
         add(MenuBar())
         add(ConnectionDetailsView())
         add(TransferSettingView())
+        add(UploadProgressView())
+        add(DownloadProgressView())
     }
 }

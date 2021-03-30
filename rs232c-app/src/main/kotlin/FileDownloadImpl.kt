@@ -37,7 +37,7 @@ class FileDownloadThread : Runnable, BinaryDownloadListener {
                 if (file.exists()) file.delete()
                 file.createNewFile()
                 downloadFile = file
-                listeners.forEach { it.onStartDownload(file) }
+                listeners.forEach { it.onSessionStart(file) }
                 myApp.currentDevice.writeAck()
                 continue
             }
@@ -45,10 +45,11 @@ class FileDownloadThread : Runnable, BinaryDownloadListener {
             val data = receivedData.firstOrNull() ?: continue
             receivedData.removeFirst()
 
-            val decodedBytes = Coder.decodeByteArray(data)
+            val decodedBytes = Coder.decodeByteArray(data, myApp.shouldAddErrors)
             if (decodedBytes != null) {
                 downloadFile?.appendBytes(decodedBytes)
             } else {
+                listeners.forEach { it.onError() }
                 if (LOG) {
                     println("ERROR: decoded is null")
                 }
@@ -67,7 +68,7 @@ class FileDownloadThread : Runnable, BinaryDownloadListener {
             listeners.forEach { it.onProgressUpdate(currentProgress) }
 
             if (currentFileSize == fileSize) {
-                listeners.forEach { it.onEndDownload(currentFile) }
+                listeners.forEach { it.onSessionEnd(currentFile) }
                 if (LOG) {
                     println("DOWNLOADED ${downloadFile?.name} with $fileSize")
                 }
