@@ -17,8 +17,8 @@ class FileTransferApp : App(MainWindowView::class, Styles::class) {
         lateinit var myApp: FileTransferApp
     }
 
-    private var uploadThread: FileUploadThread? = null
-    private val downloadImpl: FileDownloadThread = FileDownloadThread()
+    private val uploadThread: FileUploadThread = FileUploadThread()
+    private val downloadThread: FileDownloadThread = FileDownloadThread()
     private val mainWindow: MainWindowView by inject()
 
     init {
@@ -28,16 +28,11 @@ class FileTransferApp : App(MainWindowView::class, Styles::class) {
     var transferFile: File = File("")
         set(value) {
             field = value
-            uploadThread?.stop()
-            uploadThread = FileUploadThread(transferFile)
+            uploadThread.stop()
+            uploadThread.uploadFile = value
         }
 
     var downloadsFolder: String = "./"
-        set(value) {
-            field = value
-            downloadImpl.downloadsFolder = value
-        }
-
 
     var currentDeviceName: String = ""
         set(value) {
@@ -59,9 +54,11 @@ class FileTransferApp : App(MainWindowView::class, Styles::class) {
             currentDevice.isMaster = value
         }
 
+    var shouldAddErrors: Boolean = false
+
     override fun init() {
         super.init()
-        currentDevice.setDataListener(downloadImpl)
+        currentDevice.setDataListener(downloadThread)
     }
 
     override fun start(stage: Stage) {
@@ -87,9 +84,9 @@ class FileTransferApp : App(MainWindowView::class, Styles::class) {
     }
 
     fun sendSelectedFile() {
-        if (transferFile.name.isNotEmpty() && uploadThread != null) {
-            currentDevice.setDataListener(uploadThread!!)
-            uploadThread?.start()
+        if (transferFile.name.isNotEmpty()) {
+            currentDevice.setDataListener(uploadThread)
+            uploadThread.start()
         }
     }
 
@@ -110,10 +107,13 @@ class FileTransferApp : App(MainWindowView::class, Styles::class) {
         currentDevice.addListener(listener)
     }
 
-    fun subscribeOnProgressListener(listener: ProgressListener) {
-        downloadImpl.addListener(listener)
+    fun subscribeOnDownloadProgressListener(listener: ProgressListener) {
+        downloadThread.addListener(listener)
     }
 
+    fun subscribeOnUploadProgressListener(listener: ProgressListener) {
+        uploadThread.addListener(listener)
+    }
 
 }
 

@@ -5,6 +5,7 @@ import java.nio.ByteOrder
 import kotlin.experimental.and
 import kotlin.experimental.or
 import kotlin.experimental.xor
+import kotlin.random.Random
 
 
 object Coder {
@@ -67,6 +68,8 @@ object Coder {
         return ((input xor (input and 1) xor (input and 2) xor (input and 4) xor (input and 8)).toInt() shr 4).toShort()
     }
 
+    private fun createError(input: Short) = input xor ((1 shl Random(12).nextInt(0, 15)).toShort())
+
 
     private fun codeShortByIndex(index: Int, bytes: ByteArray): Short {
         var indexToRead = index
@@ -118,7 +121,7 @@ object Coder {
     }
 
 
-    private fun decodeShortFromBytes(bytes: ByteArray): Pair<Short, Int> {
+    private fun decodeShortFromBytes(bytes: ByteArray, shouldAddErrors: Boolean): Pair<Short, Int> {
         var a: Short = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).short
         var index = 0
         for (i in 4..15) {
@@ -128,6 +131,9 @@ object Coder {
         }
         a = a xor (1 shl index).toShort()
         index -= 4
+        if (shouldAddErrors &&  Random.nextInt(0, 1000) == 100) {
+            a = createError(a)
+        }
         a = decode(a) ?: return Pair(0, -1)
         return Pair(a, index)
     }
@@ -152,13 +158,14 @@ object Coder {
         return codedBytes
     }
 
-    fun decodeByteArray(bytes: ByteArray): ByteArray? {
+    fun decodeByteArray(bytes: ByteArray, shouldAddErrors: Boolean): ByteArray? {
         var decodedBytes = ByteArray(bytes.size / 2 * 11 / 8)
         var toIndex = 0
         var fromIndex = 0
         while (fromIndex <= bytes.lastIndex - 1) {
             val bytesToDecode = bytes.slice(fromIndex..fromIndex + 1).toByteArray()
-            val (short, size) = decodeShortFromBytes(bytesToDecode)
+
+            val (short, size) = decodeShortFromBytes(bytesToDecode,  shouldAddErrors)
             if (size < 0) return null
             decodedBytes = writeShortByIndex(toIndex, decodedBytes, short, size)
             fromIndex += 2
