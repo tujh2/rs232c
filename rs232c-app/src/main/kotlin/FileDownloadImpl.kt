@@ -94,4 +94,11 @@ class FileDownloadThread : Runnable, BinaryDownloadListener {
         worker = Thread(this)
         worker.start()
     }
+
+    override fun onDownLink() {
+        listeners.forEach { it.onSessionError() }
+        downloadFile = null
+        fileSize = -1
+        isRunning.set(false)
+    }
 }

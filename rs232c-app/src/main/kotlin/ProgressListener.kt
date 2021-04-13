@@ -5,4 +5,5 @@ interface ProgressListener {
     fun onProgressUpdate(progress: Double)
     fun onError()
     fun onSessionEnd(file: File)
+    fun onSessionError()
 }

@@ -202,6 +202,8 @@ class Connection(deviceName: String, private var currentSpeed: Int, var isMaster
                                 if (!isMaster)
                                     device.writeFrame(Frame(Frame.Type.DOWN_LINK))
 
+                                uploadListener?.onDownLink()
+                                downloadListener?.onDownLink()
                                 isOpened = false
                             }
                             Frame.Type.UNKNOWN -> {
