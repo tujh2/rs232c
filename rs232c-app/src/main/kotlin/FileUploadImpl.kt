@@ -93,4 +93,10 @@ class FileUploadThread(var uploadFile: File = File("")) : Runnable, BinaryUpload
     override fun onAckReceived() { ackReceived = true }
 
     override fun onErrorReceived() { errorReceived = true }
+    override fun onDownLink() {
+        listeners.forEach { it.onSessionError() }
+        uploadReader?.close()
+        uploadReader = null
+        isRunning.set(false)
+    }
 }

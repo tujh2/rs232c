@@ -4,6 +4,8 @@ import FileTransferApp.Companion.myApp
 import ProgressListener
 import javafx.geometry.Insets
 import javafx.geometry.Pos
+import javafx.scene.control.Alert
+import javafx.scene.control.ButtonType
 import javafx.scene.control.Label
 import javafx.scene.control.ProgressBar
 import kotlinx.coroutines.Dispatchers
@@ -81,6 +83,12 @@ class UploadProgressView: View(), ProgressListener {
     }
 
     override fun onSessionEnd(file: File) {
+        GlobalScope.launch(Dispatchers.JavaFx) {
+            root.isVisible = false
+        }
+    }
+
+    override fun onSessionError() {
         GlobalScope.launch(Dispatchers.JavaFx) {
             root.isVisible = false
         }

@@ -92,4 +92,16 @@ class DownloadProgressView: View(), ProgressListener {
             alert.show()
         }
     }
+
+    override fun onSessionError() {
+        GlobalScope.launch(Dispatchers.JavaFx) {
+            root.isVisible = false
+            val alert =
+                Alert(Alert.AlertType.ERROR, "Session closed", ButtonType.OK)
+            alert.headerText = "Downloading error!"
+            alert.isResizable = true
+            alert.initOwner(currentWindow)
+            alert.show()
+        }
+    }
 }
